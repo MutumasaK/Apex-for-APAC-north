@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 type MapAgent = {
   name: string
@@ -34,21 +34,15 @@ const valorantMapData: Record<string, ValorantMapData> = {
     titleJa: 'ヘイヴン',
     titleEn: 'Haven',
     subtitle: 'VALORANT MAP DETAIL',
-    overview: '3サイト特有のローテ判断と情報管理が重要なマップ。',
+    overview: '3サイト構成で守りの配置が難しいマップです。攻めは人数差を作って一気に崩す動きが重要です。',
     attackLabel: '攻め',
     defendLabel: '守り',
     focusLabel: '意識したい点',
-    attackPoints: [
-      'フェイクで守備をずらしてから本命を通す',
-      'サイト侵入前に情報取得を行う',
-    ],
-    defendPoints: [
-      '人数配分を崩しすぎない',
-      'A/C寄りの判断を早める',
-    ],
-    focusPoints: ['中盤の情報更新が重要', '浅側ローテを避ける'],
+    attackPoints: ['3サイトのどこを攻めるかを早めに決める', 'ミッド圧で守りの人数配分を崩す'],
+    defendPoints: ['AとCの寄り速度を意識する', '情報スキルで空いているサイトを減らす'],
+    focusPoints: ['ミッド周りの主導権', '寄りとローテーション速度'],
     mapPickRate: 49,
-    memo: '現行ローテでも、3サイト構造の理解と守備のローテ判断があると対応しやすいマップです。',
+    memo: 'サイト数が多く、情報取得と寄り判断の質がそのまま勝率に繋がります。',
     trackerSlug: 'haven',
     currentRotation: true,
     appMediaUrl: 'https://appmedia.jp/valorant/75609382',
@@ -59,21 +53,15 @@ const valorantMapData: Record<string, ValorantMapData> = {
     titleJa: 'スプリット',
     titleEn: 'Split',
     subtitle: 'VALORANT MAP DETAIL',
-    overview: '狭い導線と上下の取り合いが重要なマップ。',
+    overview: '縦方向の攻防が多く、ミッド管理の価値が高いマップです。設置後の連携で差がつきやすいです。',
     attackLabel: '攻め',
     defendLabel: '守り',
     focusLabel: '意識したい点',
-    attackPoints: [
-      'ミッド確保からサイト圧を広げる',
-      'スモークとフラッシュを重ねる',
-    ],
-    defendPoints: [
-      'ミッド放棄を早めに決めない',
-      'ヘブン側の維持を意識する',
-    ],
-    focusPoints: ['人数有利でも詰めすぎない', '縦ラインのケアを徹底する'],
+    attackPoints: ['ミッドを絡めて2方向から圧をかける', 'スモークとフラッシュを重ねて侵入する'],
+    defendPoints: ['ミッドの視界を簡単に渡さない', 'ヘブンからのクロスを維持する'],
+    focusPoints: ['ミッド支配', 'ヘブンとサイト内の連携'],
     mapPickRate: 52,
-    memo: 'ミッドを取れるかどうかで攻守ともに選択肢が大きく変わります。',
+    memo: 'ミッドを使えるチームほど攻めの選択肢が増えます。',
     trackerSlug: 'split',
     currentRotation: true,
     appMediaUrl: 'https://appmedia.jp/valorant/75611542',
@@ -84,21 +72,15 @@ const valorantMapData: Record<string, ValorantMapData> = {
     titleJa: 'バインド',
     titleEn: 'Bind',
     subtitle: 'VALORANT MAP DETAIL',
-    overview: 'テレポーターを絡めた揺さぶりとセットアップが重要なマップ。',
+    overview: 'テレポーターを軸にフェイクと人数寄せが発生しやすいマップです。サイト進入時のスキル連携が重要です。',
     attackLabel: '攻め',
     defendLabel: '守り',
     focusLabel: '意識したい点',
-    attackPoints: [
-      'テレポーターでローテをずらす',
-      '設置後のラインを先に決める',
-    ],
-    defendPoints: [
-      '片寄りすぎず情報を残す',
-      'ショート/ロングの主導権を争う',
-    ],
-    focusPoints: ['サイト内ユーティリティ管理', '設置後のクロスを崩さない'],
+    attackPoints: ['テレポーターで守りの視線を揺さぶる', '設置前に前線のクリアを丁寧に行う'],
+    defendPoints: ['テレポーター音に過剰反応しすぎない', 'ロングの情報を早めに取る'],
+    focusPoints: ['フェイクの質', 'ロングとショートの管理'],
     mapPickRate: 47,
-    memo: '設置までの速度と設置後の形づくりをセットで考えると安定します。',
+    memo: '音情報の扱いが勝敗に直結しやすいマップです。',
     trackerSlug: 'bind',
     currentRotation: true,
     appMediaUrl: 'https://appmedia.jp/valorant/75609295',
@@ -109,21 +91,15 @@ const valorantMapData: Record<string, ValorantMapData> = {
     titleJa: 'ブリーズ',
     titleEn: 'Breeze',
     subtitle: 'VALORANT MAP DETAIL',
-    overview: '広い射線とロングレンジの撃ち合いが多いマップ。',
+    overview: '広い射線とロング主体の撃ち合いが特徴です。無理な詰めよりも角度管理が大切です。',
     attackLabel: '攻め',
     defendLabel: '守り',
     focusLabel: '意識したい点',
-    attackPoints: [
-      '広い射線をユーティリティで区切る',
-      'ミッドコントロールを軽視しない',
-    ],
-    defendPoints: [
-      '無理な単独ピークを減らす',
-      'サイト内の遅延を厚くする',
-    ],
-    focusPoints: ['ロングのクロス管理', '人数不利時の引き判断'],
+    attackPoints: ['広いサイトを一気に取り切る', 'ロングの圧を継続して守りを下げる'],
+    defendPoints: ['不用意にピークしすぎない', '広いサイトをスキルで分断して守る'],
+    focusPoints: ['ロングの射線管理', '人数差を作らない守り'],
     mapPickRate: 45,
-    memo: 'ロングレンジでの不利交換を減らし、ユーティリティ先行で進めるのが重要です。',
+    memo: 'サイトに入る前の削り合いで優位を取れるかが大切です。',
     trackerSlug: 'breeze',
     currentRotation: true,
     appMediaUrl: 'https://appmedia.jp/valorant/75609289',
@@ -134,21 +110,15 @@ const valorantMapData: Record<string, ValorantMapData> = {
     titleJa: 'フラクチャー',
     titleEn: 'Fracture',
     subtitle: 'VALORANT MAP DETAIL',
-    overview: '挟み込みの圧力と守備の対応速度が問われるマップ。',
+    overview: '両側から攻めやすい特殊構造で、守りは連携のズレが出やすいマップです。',
     attackLabel: '攻め',
     defendLabel: '守り',
     focusLabel: '意識したい点',
-    attackPoints: [
-      '両側圧力で守備を分断する',
-      'エリア確保後の再集合を早くする',
-    ],
-    defendPoints: [
-      '押し引きの位置を固定しすぎない',
-      '片側崩壊時のリテイク導線を確保する',
-    ],
-    focusPoints: ['孤立を作らない', '初動の情報共有を徹底する'],
+    attackPoints: ['2方向同時に圧をかける', 'エリア取得後にテンポ良く寄る'],
+    defendPoints: ['初動で情報を取り切る', 'どこを捨てるかを早めに決める'],
+    focusPoints: ['タイミング合わせ', '守りの分担整理'],
     mapPickRate: 43,
-    memo: '現行ローテでも、2人単位でのエリア管理が安定しやすいマップです。',
+    memo: '連携が崩れると一気にサイトが割られやすいです。',
     trackerSlug: 'fracture',
     currentRotation: true,
     appMediaUrl: 'https://appmedia.jp/valorant/75609286',
@@ -159,21 +129,15 @@ const valorantMapData: Record<string, ValorantMapData> = {
     titleJa: 'ロータス',
     titleEn: 'Lotus',
     subtitle: 'VALORANT MAP DETAIL',
-    overview: '回転ドアと3サイト構造による情報戦が重要なマップ。',
+    overview: '3サイトと回転ドアが特徴で、攻守ともに判断量が多いマップです。',
     attackLabel: '攻め',
     defendLabel: '守り',
     focusLabel: '意識したい点',
-    attackPoints: [
-      '音情報を使って守備を揺らす',
-      'サイト切り替えを素早く行う',
-    ],
-    defendPoints: [
-      'C/B間の情報共有を切らさない',
-      '裏取りタイミングを合わせる',
-    ],
-    focusPoints: ['ドア開閉の情報管理', '寄り判断を早めすぎない'],
+    attackPoints: ['ドアや破壊可能壁を活用して揺さぶる', 'サイトを見せてからの寄り直しを使う'],
+    defendPoints: ['AとCの情報を切らさない', '人数差で無理に取り返さない'],
+    focusPoints: ['ドア周りの使い方', '3サイトの人数配分'],
     mapPickRate: 44,
-    memo: '回転の速さに振り回されないよう、守備の基準位置を明確にしておくと安定します。',
+    memo: '情報量が多いので、迷わないコールが大切です。',
     trackerSlug: 'lotus',
     currentRotation: true,
     appMediaUrl: 'https://appmedia.jp/valorant/76382044',
@@ -184,21 +148,15 @@ const valorantMapData: Record<string, ValorantMapData> = {
     titleJa: 'パール',
     titleEn: 'Pearl',
     subtitle: 'VALORANT MAP DETAIL',
-    overview: 'ロング主体のエリア争いとミッド管理の質が問われるマップ。',
+    overview: 'ロングとミッドの圧が重要で、攻めの形を丁寧に作る必要があるマップです。',
     attackLabel: '攻め',
     defendLabel: '守り',
     focusLabel: '意識したい点',
-    attackPoints: [
-      'ミッドからの圧力を継続する',
-      'ロング設置後の形を先に作る',
-    ],
-    defendPoints: [
-      '前寄り情報を取りすぎない',
-      'リテイク導線を残して守る',
-    ],
-    focusPoints: ['ロングの人数差管理', 'A/Bの情報断絶を防ぐ'],
+    attackPoints: ['ミッドからの圧をかけて守りを分断する', 'ロングの主導権を握って設置を安定させる'],
+    defendPoints: ['無理な撃ち合いを減らす', 'サイト内で時間を使って寄りを待つ'],
+    focusPoints: ['ロングの人数管理', 'A/B の情報共有'],
     mapPickRate: 41,
-    memo: 'ロング射線の管理と設置後の耐久力が勝敗に直結しやすいマップです。',
+    memo: 'ロング主導の撃ち合いが多く、前に出る判断が難しいマップです。',
     trackerSlug: 'pearl',
     currentRotation: true,
     appMediaUrl: 'https://appmedia.jp/valorant/75654946',
@@ -209,21 +167,15 @@ const valorantMapData: Record<string, ValorantMapData> = {
     titleJa: 'アビス',
     titleEn: 'Abyss',
     subtitle: 'VALORANT MAP DETAIL',
-    overview: '落下リスクと外周ルートの管理が特徴の個性が強いマップ。',
+    overview: '落下エリアと広いレーンが特徴で、位置取りの精度が問われるマップです。',
     attackLabel: '攻め',
     defendLabel: '守り',
     focusLabel: '意識したい点',
-    attackPoints: [
-      '外周からの圧力と本命進行を分けて使う',
-      '不用意なピークで落下しない位置取りを徹底する',
-    ],
-    defendPoints: [
-      '無理な前詰めより射線管理を優先する',
-      '人数不利ではリテイク前提の配置に切り替える',
-    ],
-    focusPoints: ['落下リスクの共有', 'サイト内の孤立を作らない'],
+    attackPoints: ['落下リスクを理解してピークする', '広いレーンを使って挟みを作る'],
+    defendPoints: ['不用意な前詰めを減らす', '人数不利ではリテイク重視に切り替える'],
+    focusPoints: ['落下ラインの把握', '広い射線の共有'],
     mapPickRate: 38,
-    memo: '現行ローテ外でも、独特の落下リスクと広い展開力への理解があると対応しやすいマップです。',
+    memo: '事故が起きやすいので、安定した立ち回りが特に大切です。',
     trackerSlug: 'abyss',
     currentRotation: false,
     appMediaUrl: 'https://appmedia.jp/valorant/78209657',
@@ -234,21 +186,15 @@ const valorantMapData: Record<string, ValorantMapData> = {
     titleJa: 'コロード',
     titleEn: 'Corrode',
     subtitle: 'VALORANT MAP DETAIL',
-    overview: '細い導線の圧迫感とエリア交換の速さが鍵になるマップ。',
+    overview: 'まだ研究途中の要素が多く、テンポ良い連携と情報共有が差になりやすいマップです。',
     attackLabel: '攻め',
     defendLabel: '守り',
     focusLabel: '意識したい点',
-    attackPoints: [
-      '先に使うユーティリティを整理して侵入速度を上げる',
-      'ミッド周辺の主導権を取って守備を割る',
-    ],
-    defendPoints: [
-      '狭所でのクロスを意識する',
-      'エリアを渡す判断を早めて人数有利で取り返す',
-    ],
-    focusPoints: ['狭所の撃ち合い管理', '人数差を活かした再取得'],
+    attackPoints: ['ユーティリティで前線を押し上げる', 'ミッド周辺の強ポジを早めに取る'],
+    defendPoints: ['エリアを広げすぎず守る', '寄りやすい形を意識する'],
+    focusPoints: ['レーンの距離感', '人数差を作った後の詰め方'],
     mapPickRate: 35,
-    memo: '現行ローテ外でも、狭い導線と素早い情報交換への対応力を磨く教材として使いやすいマップです。',
+    memo: '連携が整っているチームほど守りでも攻めでも安定しやすいです。',
     trackerSlug: 'corrode',
     currentRotation: false,
     appMediaUrl: 'https://appmedia.jp/valorant/79061576',
@@ -271,82 +217,12 @@ function DetailMapImage({
   className: string
   onClick: () => void
 }) {
-  const [imageSrc, setImageSrc] = useState(src.endsWith('.webp') ? src : '')
-  const [isReady, setIsReady] = useState(src.endsWith('.webp'))
-
-  useEffect(() => {
-    let active = true
-
-    setImageSrc(src.endsWith('.webp') ? src : '')
-    setIsReady(src.endsWith('.webp'))
-
-    if (typeof window === 'undefined' || src.endsWith('.webp')) {
-      return () => {
-        active = false
-      }
-    }
-
-    const image = new window.Image()
-    image.decoding = 'async'
-    image.onload = () => {
-      try {
-        const canvas = document.createElement('canvas')
-        canvas.width = image.naturalWidth
-        canvas.height = image.naturalHeight
-
-        const context = canvas.getContext('2d')
-        if (!context) return
-
-        context.drawImage(image, 0, 0)
-        const webpSrc = canvas.toDataURL('image/webp', 0.92)
-
-        if (active && webpSrc.startsWith('data:image/webp')) {
-          setImageSrc(webpSrc)
-          setIsReady(true)
-        }
-      } catch {
-        if (active) {
-          setImageSrc(src)
-          setIsReady(true)
-        }
-      }
-    }
-
-    image.onerror = () => {
-      if (active) {
-        setImageSrc(src)
-        setIsReady(true)
-      }
-    }
-
-    image.src = src
-
-    return () => {
-      active = false
-    }
-  }, [src])
-
-  if (!isReady || !imageSrc) {
-    return <div className="detailLoadingBox">画像を最適化しています...</div>
-  }
-
-  return (
-    <img
-      src={imageSrc}
-      alt={alt}
-      className={className}
-      onClick={onClick}
-      onError={() => {
-        setImageSrc(src)
-        setIsReady(true)
-      }}
-    />
-  )
+  return <img src={src} alt={alt} className={className} onClick={onClick} />
 }
 
 export default function ValorantMapGuidePage() {
   const router = useRouter()
-  const slug = typeof router.query.slug === 'string' ? router.query.slug : ''
+  const slug = typeof router.query.slug === 'string' ? router.query.slug.toLowerCase() : ''
   const map = valorantMapData[slug] ?? valorantMapData.haven
 
   const [topAgents, setTopAgents] = useState<MapAgent[]>([])
@@ -376,8 +252,9 @@ export default function ValorantMapGuidePage() {
         if (!mounted) return
         setTopAgents([])
       } finally {
-        if (!mounted) return
-        setLoadingAgents(false)
+        if (mounted) {
+          setLoadingAgents(false)
+        }
       }
     }
 
@@ -388,10 +265,7 @@ export default function ValorantMapGuidePage() {
     }
   }, [map.trackerSlug])
 
-  const pageTitle = useMemo(
-    () => `${map.titleJa} / ${map.titleEn}`,
-    [map.titleJa, map.titleEn]
-  )
+  const pageTitle = `${map.titleJa} / ${map.titleEn}`
 
   return (
     <div className="detailPage">
@@ -404,16 +278,14 @@ export default function ValorantMapGuidePage() {
           <p className="detailEyebrow detailEyebrow--light">{map.subtitle}</p>
           <h1 className="detailPageTitle">{pageTitle}</h1>
           <p className="detailPageLead">
-            マップごとの攻略ポイントと採用傾向を、見やすいカード形式で整理しています。
+            マップごとの基本方針と、現在の上位採用エージェントをまとめて確認できます。
           </p>
 
           <div className="detailHeroBadges">
             <span className="detailTopBadge">
-              {map.currentRotation ? '現行コンペティティブ対象' : '個別マップアーカイブ'}
+              {map.currentRotation ? '現行ローテーション' : 'アーカイブ'}
             </span>
-            <span className="detailTopBadge detailTopBadge--soft">
-              {map.titleEn}
-            </span>
+            <span className="detailTopBadge detailTopBadge--soft">{map.titleEn}</span>
           </div>
         </section>
 
@@ -422,7 +294,7 @@ export default function ValorantMapGuidePage() {
             <article className="detailCard detailCard--overview">
               <div className="detailSectionHeader">
                 <p className="detailSectionSub">MAP OVERVIEW</p>
-                <h2>マップ概要</h2>
+                <h2>マップ全体図</h2>
               </div>
 
               <div className="detailOverviewImageWrap">
@@ -448,7 +320,7 @@ export default function ValorantMapGuidePage() {
                   rel="noopener noreferrer"
                   className="externalGuideLink"
                 >
-                  マップ攻略サイト
+                  外部ガイドを見る
                 </a>
               </div>
             </article>
@@ -496,14 +368,12 @@ export default function ValorantMapGuidePage() {
           <article className="detailCard">
             <div className="detailSectionHeader">
               <p className="detailSectionSub">AGENT PICK RATE</p>
-              <h2>エージェントの使用率</h2>
-              <p>最新公開データを優先し、取得できない場合は補助データを表示します。</p>
+              <h2>エージェント採用率</h2>
+              <p>現在の公開データから、上位3エージェントを表示しています。</p>
             </div>
 
             {loadingAgents ? (
-              <div className="detailLoadingBox">
-                エージェント使用率を取得しています。
-              </div>
+              <div className="detailLoadingBox">エージェント採用率を確認しています。</div>
             ) : topAgents.length > 0 ? (
               <div className="agentRankList agentRankList--triple">
                 {topAgents.map((agent, index) => (
@@ -513,13 +383,11 @@ export default function ValorantMapGuidePage() {
                         <p className="agentRankCard__rank">TOP {index + 1}</p>
                         <h3>{agent.name}</h3>
                       </div>
-                      <span className="agentRoleBadge">
-                        {agent.role || 'Agent'}
-                      </span>
+                      <span className="agentRoleBadge">{agent.role || 'Agent'}</span>
                     </div>
 
                     <div className="detailMetricRow">
-                      <span>使用率</span>
+                      <span>採用率</span>
                       <strong>{agent.pickRate}%</strong>
                     </div>
                     <div className="detailBar detailBar--gold">
@@ -532,9 +400,7 @@ export default function ValorantMapGuidePage() {
                 ))}
               </div>
             ) : (
-              <div className="detailLoadingBox">
-                現在このマップの使用率データを表示できません。
-              </div>
+              <div className="detailLoadingBox">現在このマップの採用率データを表示できません。</div>
             )}
           </article>
         </section>

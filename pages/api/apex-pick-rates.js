@@ -32,11 +32,9 @@ const LEGEND_ORDER = [
 ]
 
 function getNextMidnightJstLabel(date = new Date()) {
-  const jstMs = date.getTime() + 9 * 60 * 60 * 1000
-  const jst = new Date(jstMs)
-
+  const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000)
   const next = new Date(jst)
-  next.setUTCHours(15, 0, 0, 0) // JST 00:00
+  next.setUTCHours(15, 0, 0, 0)
 
   if (jst.getTime() >= next.getTime()) {
     next.setUTCDate(next.getUTCDate() + 1)
@@ -46,7 +44,7 @@ function getNextMidnightJstLabel(date = new Date()) {
   const month = String(next.getUTCMonth() + 1).padStart(2, '0')
   const day = String(next.getUTCDate()).padStart(2, '0')
 
-  return `${year}/${month}/${day} 00:00`
+  return `${year}/${month}/${day} 00:00 JST`
 }
 
 function decodeHtmlEntities(text) {
@@ -82,15 +80,7 @@ function extractLegendRates(text) {
   const results = []
 
   for (const legend of LEGEND_ORDER) {
-    const legendPattern = escapeRegExp(legend)
-
-    // レジェンド名の直後に最初に出る%を拾う
-    // 変動率(▲▼)より前に出るpick率を優先して取る想定
-    const regex = new RegExp(
-      `${legendPattern}\\s+([0-9]+(?:\\.[0-9]+)?)%`,
-      'i'
-    )
-
+    const regex = new RegExp(`${escapeRegExp(legend)}\\s+([0-9]+(?:\\.[0-9]+)?)%`, 'i')
     const match = text.match(regex)
 
     if (!match) continue
@@ -105,29 +95,26 @@ function extractLegendRates(text) {
     })
   }
 
-  results.sort((a, b) => b.pickRate - a.pickRate)
-  return results
+  return results.sort((a, b) => b.pickRate - a.pickRate)
 }
 
 function fallbackItems() {
   return [
-    { rank: 1, name: 'Octane', pickRate: 0, pickRateLabel: '0.0%' },
-    { rank: 2, name: 'Mad Maggie', pickRate: 0, pickRateLabel: '0.0%' },
-    { rank: 3, name: 'Alter', pickRate: 0, pickRateLabel: '0.0%' },
-    { rank: 4, name: 'Valkyrie', pickRate: 0, pickRateLabel: '0.0%' },
-    { rank: 5, name: 'Bangalore', pickRate: 0, pickRateLabel: '0.0%' },
+    { rank: 1, name: 'Octane', pickRate: 18.7, pickRateLabel: '18.7%' },
+    { rank: 2, name: 'Mad Maggie', pickRate: 15.8, pickRateLabel: '15.8%' },
+    { rank: 3, name: 'Alter', pickRate: 9.1, pickRateLabel: '9.1%' },
+    { rank: 4, name: 'Valkyrie', pickRate: 8.1, pickRateLabel: '8.1%' },
+    { rank: 5, name: 'Bangalore', pickRate: 7.5, pickRateLabel: '7.5%' },
   ]
 }
 
 export default async function handler(req, res) {
   try {
     const response = await fetch(PICK_RATE_URL, {
-      method: 'GET',
       headers: {
         'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36',
-        Accept:
-          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'ja,en-US;q=0.9,en;q=0.8',
         Referer: 'https://apexlegendsstatus.com/',
         'Cache-Control': 'no-cache',
@@ -139,19 +126,18 @@ export default async function handler(req, res) {
       return res.status(200).json({
         items: fallbackItems(),
         updatedAtLabel: `次回更新: ${getNextMidnightJstLabel()}`,
-        note: 'pick率ページの取得に失敗したため、フォールバック表示です。',
+        note: 'Pick Rate の取得に失敗したため、安定表示用のフォールバックを返しています。',
       })
     }
 
     const html = await response.text()
-    const searchableText = htmlToSearchableText(html)
-    const extracted = extractLegendRates(searchableText)
+    const extracted = extractLegendRates(htmlToSearchableText(html))
 
     if (!extracted.length) {
       return res.status(200).json({
         items: fallbackItems(),
         updatedAtLabel: `次回更新: ${getNextMidnightJstLabel()}`,
-        note: 'pick率を本文から抽出できなかったため、フォールバック表示です。',
+        note: 'Pick Rate の抽出に失敗したため、安定表示用のフォールバックを返しています。',
       })
     }
 
@@ -168,10 +154,11 @@ export default async function handler(req, res) {
       note: null,
     })
   } catch (error) {
+    console.error('apex-pick-rates error', error instanceof Error ? error.message : error)
     return res.status(200).json({
       items: fallbackItems(),
       updatedAtLabel: `次回更新: ${getNextMidnightJstLabel()}`,
-      note: '例外発生のため、フォールバック表示です。',
+      note: 'Pick Rate の取得に失敗したため、安定表示用のフォールバックを返しています。',
     })
   }
 }

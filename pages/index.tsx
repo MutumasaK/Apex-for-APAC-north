@@ -42,7 +42,6 @@ type ValorantMapCardItem = {
   image: string
   status: 'current' | 'archive'
   archiveLabel?: string
-  imagePosition?: string
 }
 
 const currentValorantMaps: ValorantMapCardItem[] = [
@@ -75,11 +74,11 @@ const archiveValorantMaps: ValorantMapCardItem[] = [
 function fallbackScrims(): ScrimItem[] {
   return [
     {
-      id: 'scrim-fallback-1',
+      id: 'scrim-fallback',
       title: '自チームのESCLスクリム情報',
-      dateLabel: '更新待ち',
+      dateLabel: '',
       statusLabel: '確認中',
-      note: 'API の応答後に最新の参加状況を表示します。',
+      note: 'ESCL参加状況を確認しています。',
     },
   ]
 }
@@ -88,7 +87,7 @@ function fallbackScrimMeta(): ScrimMeta {
   return {
     teamName: '京都ブライアンホテル',
     ratePoint: 0,
-    rateUpdatedAt: '取得待ち',
+    rateUpdatedAt: '最終確認: 確認中',
   }
 }
 
@@ -99,12 +98,12 @@ function fallbackRankMap(): RankMapItem | null {
 function fallbackApexNews(): NewsItem[] {
   return [
     {
-      id: 'apex-fallback-1',
-      title: 'Apex 最新情報を取得中です',
-      href: '#',
-      date: 'Loading',
-      category: 'Update',
-      summary: 'ニュース API の取得完了後に最新情報を表示します。',
+      id: 'apex-news-fallback',
+      title: 'Apex 最新ニュースを取得できませんでした',
+      href: 'https://www.ea.com/ja/games/apex-legends/apex-legends/news?page=1&type=latest',
+      date: '最新',
+      category: 'EA Official',
+      summary: 'EA公式ニュースページへのリンクを表示しています。',
     },
   ]
 }
@@ -112,12 +111,12 @@ function fallbackApexNews(): NewsItem[] {
 function fallbackValorantNews(): NewsItem[] {
   return [
     {
-      id: 'valorant-fallback-1',
-      title: 'VALORANT 最新情報を取得中です',
-      href: '#',
-      date: 'Loading',
-      category: 'Patch',
-      summary: 'ニュース API の取得完了後に最新情報を表示します。',
+      id: 'valorant-news-fallback',
+      title: 'VALORANT 最新ニュースを取得できませんでした',
+      href: 'https://playvalorant.com/ja-jp/news/',
+      date: '最新',
+      category: 'VALORANT Official',
+      summary: 'VALORANT公式ニュースページへのリンクを表示しています。',
     },
   ]
 }
@@ -134,7 +133,6 @@ function fallbackLegendMeta(): ApexLegendMetaItem[] {
 
 async function fetchJson(url: string) {
   const response = await fetch(url)
-
   if (!response.ok) {
     throw new Error(`Request failed: ${response.status}`)
   }
@@ -145,28 +143,19 @@ async function fetchJson(url: string) {
 function normalizeScrimResponse(payload: any): ScrimItem[] {
   const source = Array.isArray(payload)
     ? payload
-    : payload?.items ?? payload?.scrims ?? payload?.data ?? payload?.result ?? []
+    : payload?.items ?? payload?.scrims ?? payload?.data ?? []
 
   if (!Array.isArray(source) || source.length === 0) {
     return fallbackScrims()
   }
 
-  return source.slice(0, 3).map((item: any, index: number) => {
-    const rawStatus = String(
-      item?.statusLabel ?? item?.status ?? item?.participationStatus ?? '確認中'
-    )
-
-    return {
-      id: String(item?.id ?? item?.scrimId ?? `scrim-${index}`),
-      title: String(item?.title ?? item?.name ?? item?.eventName ?? `ESCL Scrim ${index + 1}`),
-      dateLabel: String(
-        item?.dateLabel ?? item?.date ?? item?.startDate ?? item?.scheduledAt ?? '日程確認中'
-      ),
-      statusLabel:
-        rawStatus.includes('参加') && !rawStatus.includes('未参加') ? '参加' : rawStatus,
-      note: String(item?.note ?? item?.description ?? item?.memo ?? '詳細を確認中です。'),
-    }
-  })
+  return source.slice(0, 3).map((item: any, index: number) => ({
+    id: String(item?.id ?? `scrim-${index}`),
+    title: String(item?.title ?? '自チームのESCLスクリム情報'),
+    dateLabel: String(item?.dateLabel ?? ''),
+    statusLabel: String(item?.statusLabel ?? item?.status ?? '確認中'),
+    note: String(item?.note ?? '詳細を確認しています。'),
+  }))
 }
 
 function normalizeScrimMeta(payload: any): ScrimMeta {
@@ -175,7 +164,7 @@ function normalizeScrimMeta(payload: any): ScrimMeta {
   return {
     teamName: String(meta?.teamName ?? '京都ブライアンホテル'),
     ratePoint: Number(meta?.ratePoint ?? 0),
-    rateUpdatedAt: String(meta?.rateUpdatedAt ?? payload?.updatedAtLabel ?? '取得待ち'),
+    rateUpdatedAt: String(meta?.rateUpdatedAt ?? payload?.updatedAtLabel ?? '最終確認: 確認中'),
   }
 }
 
@@ -196,7 +185,7 @@ function normalizeRankMapResponse(payload: any): RankMapItem | null {
     name,
     slug,
     image,
-    updatedAtLabel: String(payload?.updatedAtLabel ?? '更新時刻は取得中です。'),
+    updatedAtLabel: String(payload?.updatedAtLabel ?? '次回更新: 確認中'),
   }
 }
 
@@ -210,12 +199,12 @@ function normalizeNewsResponse(payload: any, fallback: NewsItem[]): NewsItem[] {
   }
 
   return source.slice(0, 3).map((item: any, index: number) => ({
-    id: String(item?.id ?? item?.guid ?? `${item?.href ?? item?.url ?? 'news'}-${index}`),
+    id: String(item?.id ?? `${item?.href ?? item?.url ?? 'news'}-${index}`),
     title: String(item?.title ?? 'タイトル未設定'),
     href: String(item?.href ?? item?.url ?? '#'),
-    date: String(item?.date ?? item?.publishedAt ?? item?.pubDate ?? '日付未設定'),
+    date: String(item?.date ?? '最新'),
     category: String(item?.category ?? item?.source ?? 'News'),
-    summary: String(item?.summary ?? item?.description ?? '要約を取得中です。'),
+    summary: String(item?.summary ?? '詳細を確認しています。'),
   }))
 }
 
@@ -236,12 +225,11 @@ function normalizeLegendMetaResponse(payload: any): ApexLegendMetaItem[] {
     }))
     .filter((item: ApexLegendMetaItem) => item.name)
 
-  if (!items.length) {
+  if (items.length === 0) {
     return fallbackLegendMeta()
   }
 
-  const hasRealRate = items.some((item) => item.pickRate > 0)
-  return hasRealRate ? items : fallbackLegendMeta()
+  return items.some((item) => item.pickRate > 0) ? items : fallbackLegendMeta()
 }
 
 function ValorantMapCard({
@@ -254,12 +242,7 @@ function ValorantMapCard({
   return (
     <article className={`valorantMapCard${archive ? ' valorantMapCard--archive' : ''}`}>
       <div className="valorantMapImageWrap">
-        <img
-          src={map.image}
-          alt={map.name}
-          className={`valorantMapImage${archive ? ' valorantMapImage--archive' : ''}`}
-          style={{ objectPosition: map.imagePosition || 'center' }}
-        />
+        <img src={map.image} alt={map.name} className="valorantMapImage" />
         {archive && map.archiveLabel ? <span className="archiveBadge">{map.archiveLabel}</span> : null}
       </div>
 
@@ -267,7 +250,7 @@ function ValorantMapCard({
         <div className="mapFooterRow">
           <p className="mapName">{map.name}</p>
           <Link href={`/valorant/${map.slug}`} className="mapGuideLink">
-            マップ攻略
+            マップ解説
           </Link>
         </div>
       </div>
@@ -290,7 +273,7 @@ export default function HomePage() {
   useEffect(() => {
     let mounted = true
 
-    const load = async () => {
+    async function load() {
       const [scrimResult, rankMapResult, apexNewsResult, valorantNewsResult, legendMetaResult] =
         await Promise.allSettled([
           fetchJson('/api/escl-status'),
@@ -318,9 +301,7 @@ export default function HomePage() {
       }
 
       if (valorantNewsResult.status === 'fulfilled') {
-        setValorantNews(
-          normalizeNewsResponse(valorantNewsResult.value, fallbackValorantNews())
-        )
+        setValorantNews(normalizeNewsResponse(valorantNewsResult.value, fallbackValorantNews()))
       }
 
       if (legendMetaResult.status === 'fulfilled') {
@@ -335,21 +316,18 @@ export default function HomePage() {
     }
   }, [])
 
-  const heroScrimStatus = loadingState.scrim
-    ? '取得中'
-    : scrims[0]?.statusLabel ?? '確認中'
-
-  const heroApexStatus = loadingState.rankMap
-    ? '取得中'
-    : rankMap?.name ?? '確認中'
+  const heroScrimStatus = loadingState.scrim ? '確認中' : scrims[0]?.statusLabel ?? '未確認'
+  const heroApexStatus = loadingState.rankMap ? '確認中' : rankMap?.name ?? '未確認'
 
   return (
     <div className="site-shell">
       <header className="hero">
         <div className="hero__content">
           <p className="eyebrow">APEX DASHBOARD</p>
-          <h1>極上な作品をあなたへ</h1>
-          <p className="hero__lead">製作の情報と熱量を、ひとつに。</p>
+          <h1>必要な情報を、ひと目で。</h1>
+          <p className="hero__lead">
+            Apex と VALORANT の最新情報、ESCL参加状況、ランクマップをまとめて確認できます。
+          </p>
 
           <div className="hero__statusRow hero__statusRow--two">
             <div className="statusCard">
@@ -369,7 +347,7 @@ export default function HomePage() {
         <section className="section">
           <div className="sectionHeader">
             <p className="sectionHeader__sub">APEX</p>
-            <h2>Apexの情報</h2>
+            <h2>Apex の情報</h2>
           </div>
 
           <div className="gridTwo">
@@ -386,7 +364,7 @@ export default function HomePage() {
                       <strong>{item.title}</strong>
                       <span className="resultBadge">{item.statusLabel}</span>
                     </div>
-                    <div className="resultCardRow__meta">{item.dateLabel}</div>
+                    {item.dateLabel ? <div className="resultCardRow__meta">{item.dateLabel}</div> : null}
                     <div className="resultCardRow__note">{item.note}</div>
                   </div>
                 ))}
@@ -404,11 +382,11 @@ export default function HomePage() {
             <article className="card">
               <div className="sectionHeader sectionHeader--compact">
                 <p className="sectionHeader__sub">RANK MAP</p>
-                <h3>マップローテーション</h3>
+                <h3>ランクマップローテーション</h3>
               </div>
 
               <p className="mapUpdateNote">
-                GameFavo のランクマッチ現在情報を取得して表示しています。
+                GameFavo の「ランクマッチ &gt; 現在」を取得して表示しています。
               </p>
 
               {rankMap ? (
@@ -422,10 +400,7 @@ export default function HomePage() {
                   </div>
                 </article>
               ) : (
-                <div className="loadingPanel">
-                  現在のランクマップを取得中です。しばらくしても表示されない場合は
-                  `pages/api/rankmap.js` を確認してください。
-                </div>
+                <div className="loadingPanel">現在のランクマップを確認しています。</div>
               )}
             </article>
           </div>
@@ -435,7 +410,7 @@ export default function HomePage() {
           <article className="card">
             <div className="sectionHeader sectionHeader--compact">
               <p className="sectionHeader__sub">LEGEND PICK RATE</p>
-              <h3>高pick率のレジェンド</h3>
+              <h3>高Pick率レジェンド</h3>
             </div>
 
             <div className="legendMetaGrid">
@@ -467,7 +442,7 @@ export default function HomePage() {
           <article className="newsCard">
             <div className="sectionHeader sectionHeader--compact">
               <p className="sectionHeader__sub">NEWS</p>
-              <h3>Apexの最新情報</h3>
+              <h3>Apex の最新情報</h3>
             </div>
 
             <ul className="newsList">
@@ -492,13 +467,13 @@ export default function HomePage() {
         <section className="section">
           <div className="sectionHeader">
             <p className="sectionHeader__sub">VALORANT</p>
-            <h2>VALORANTの情報</h2>
+            <h2>VALORANT の情報</h2>
           </div>
 
           <article className="card">
             <div className="sectionHeader sectionHeader--compact">
               <p className="sectionHeader__sub">MAP ROTATION</p>
-              <h3>現シーズンのマップローテーション</h3>
+              <h3>現行シーズンのマップ</h3>
             </div>
 
             <div className="valorantMapGrid">
@@ -516,7 +491,7 @@ export default function HomePage() {
               <h3>アーカイブマップ</h3>
             </div>
             <p className="archiveLead">
-              現在のローテーション外にあるマップです。必要なときにすぐ見返せるように残しています。
+              現在のローテーション外にあるマップです。必要なときにすぐ確認できるように残しています。
             </p>
 
             <div className="valorantArchiveGrid">
@@ -531,7 +506,7 @@ export default function HomePage() {
           <article className="newsCard">
             <div className="sectionHeader sectionHeader--compact">
               <p className="sectionHeader__sub">NEWS</p>
-              <h3>VALORANTの最新情報</h3>
+              <h3>VALORANT の最新情報</h3>
             </div>
 
             <ul className="newsList">
