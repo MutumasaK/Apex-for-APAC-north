@@ -2,13 +2,24 @@ import * as cheerio from 'cheerio'
 
 const RANKMAP_SOURCE_URL = 'https://gamefavo.com/news/apex/apex-rotation-schedule/'
 
+const JP = {
+  rankMatch: '\u30e9\u30f3\u30af\u30de\u30c3\u30c1',
+  current: '\u73fe\u5728',
+  next: 'NEXT',
+  end: '\u7d42\u4e86',
+  verifyGameFavo: '\u6b21\u56de\u66f4\u65b0: GameFavo \u3092\u78ba\u8a8d',
+  currentBlockMissing:
+    '\u30e9\u30f3\u30af\u30de\u30c3\u30c1\u5185\u306e\u300c\u73fe\u5728\u300d\u30d6\u30ed\u30c3\u30af\u3092\u898b\u3064\u3051\u3089\u308c\u307e\u305b\u3093\u3067\u3057\u305f',
+  rankSectionMissing:
+    '\u30e9\u30f3\u30af\u30de\u30c3\u30c1\u30bb\u30af\u30b7\u30e7\u30f3\u3092\u898b\u3064\u3051\u3089\u308c\u307e\u305b\u3093\u3067\u3057\u305f',
+  mapNameMissing:
+    '\u73fe\u5728\u306e\u30e9\u30f3\u30af\u30de\u30c3\u30d7\u540d\u3092\u7279\u5b9a\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f',
+  parseFailed:
+    '\u30e9\u30f3\u30af\u30de\u30c3\u30d7\u306e\u62bd\u51fa\u306b\u5931\u6557\u3057\u307e\u3057\u305f',
+}
+
 const MAP_ASSET_MAP = {
   "World's Edge": {
-    name: "World's Edge",
-    slug: 'worlds-edge',
-    image: '/maps/worlds-edge.jpg',
-  },
-  'Worlds Edge': {
     name: "World's Edge",
     slug: 'worlds-edge',
     image: '/maps/worlds-edge.jpg',
@@ -40,106 +51,84 @@ const MAP_ASSET_MAP = {
   },
 }
 
+const MAP_ALIASES = [
+  { canonicalName: "World's Edge", aliases: ["World's Edge", 'Worlds Edge', '\u30ef\u30fc\u30eb\u30ba\u30a8\u30c3\u30b8'] },
+  { canonicalName: 'Olympus', aliases: ['Olympus', '\u30aa\u30ea\u30f3\u30d1\u30b9'] },
+  { canonicalName: 'Storm Point', aliases: ['Storm Point', '\u30b9\u30c8\u30fc\u30e0\u30dd\u30a4\u30f3\u30c8'] },
+  { canonicalName: 'Broken Moon', aliases: ['Broken Moon', '\u30d6\u30ed\u30fc\u30af\u30f3\u30e0\u30fc\u30f3'] },
+  { canonicalName: 'E-District', aliases: ['E-District', 'EDistrict', 'E District'] },
+  { canonicalName: 'Kings Canyon', aliases: ['Kings Canyon', "King's Canyon", '\u30ad\u30f3\u30b0\u30b9\u30ad\u30e3\u30cb\u30aa\u30f3'] },
+]
+
 function normalize(text = '') {
   return text.replace(/\s+/g, ' ').trim()
+}
+
+function normalizeForMatch(text = '') {
+  return normalize(text)
+    .toLowerCase()
+    .replace(/[’']/g, '')
+    .replace(/[-_]/g, '')
+    .replace(/[()（）]/g, '')
+    .replace(/\s+/g, '')
 }
 
 function pad2(value) {
   return String(value).padStart(2, '0')
 }
 
-function extractLines(html) {
-  const $ = cheerio.load(html)
-  $('script, style, noscript').remove()
-
-  return $('body')
-    .text()
-    .split(/[\r\n]+/)
-    .map((line) => normalize(line))
-    .filter(Boolean)
+function buildErrorPayload(errorType, message) {
+  return {
+    ok: false,
+    errorType,
+    message,
+    sourceUrl: RANKMAP_SOURCE_URL,
+  }
 }
 
-function extractSection(lines, sectionTitle) {
-  const sectionStart = lines.findIndex((line) => line === sectionTitle)
-  if (sectionStart === -1) {
-    throw new Error(`${sectionTitle} セクションを検出できませんでした。`)
-  }
+function getCanonicalMapName(text = '') {
+  const normalized = normalizeForMatch(text)
+  const matched = MAP_ALIASES.find((entry) =>
+    entry.aliases.some((alias) => normalized.includes(normalizeForMatch(alias)))
+  )
 
-  const nextHeadings = ['###', '## ', 'Apex Legends グッズ', 'まとめ記事', 'おすすめページ']
-  let sectionEnd = lines.length
-
-  for (let index = sectionStart + 1; index < lines.length; index += 1) {
-    const line = lines[index]
-    if (
-      line.startsWith('### ') ||
-      line.startsWith('## ') ||
-      nextHeadings.includes(line)
-    ) {
-      sectionEnd = index
-      break
-    }
-  }
-
-  return lines.slice(sectionStart, sectionEnd)
+  return matched?.canonicalName ?? null
 }
 
-function findCurrentBlock(lines) {
-  const currentIndex = lines.findIndex((line) => line === '現在')
-  if (currentIndex === -1) {
-    throw new Error('現在ブロックを検出できませんでした。')
-  }
-
-  const nextIndex = lines.findIndex((line, index) => index > currentIndex && line === 'NEXT')
-  return nextIndex === -1 ? lines.slice(currentIndex + 1) : lines.slice(currentIndex + 1, nextIndex)
-}
-
-function extractMapName(blockLines) {
-  const mapName = blockLines.find((line) => MAP_ASSET_MAP[line])
-  if (!mapName) {
-    throw new Error('現在のランクマップ名を検出できませんでした。')
-  }
-
-  return mapName
-}
-
-function extractEndTime(blockLines) {
-  const endLine = blockLines.find((line) => /^終了\s*\d{1,2}:\d{2}$/.test(line))
-  if (!endLine) {
-    return null
-  }
-
-  return endLine.replace(/^終了\s*/, '')
+function extractEndTime(text = '') {
+  const match = normalize(text).match(new RegExp(`${JP.end}\\s*(\\d{1,2}:\\d{2})`, 'i'))
+  return match?.[1] ?? null
 }
 
 function formatNextUpdateLabel(endTime) {
   if (!endTime) {
-    return '次回更新: GameFavo を参照'
+    return JP.verifyGameFavo
   }
 
   const match = endTime.match(/^(\d{1,2}):(\d{2})$/)
   if (!match) {
-    return '次回更新: GameFavo を参照'
+    return JP.verifyGameFavo
   }
 
   const now = new Date()
-  const jstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000)
+  const nowJst = new Date(now.getTime() + 9 * 60 * 60 * 1000)
   const hour = Number(match[1])
   const minute = Number(match[2])
 
   let nextUpdate = new Date(
-    Date.UTC(jstNow.getUTCFullYear(), jstNow.getUTCMonth(), jstNow.getUTCDate(), hour, minute, 0)
+    Date.UTC(nowJst.getUTCFullYear(), nowJst.getUTCMonth(), nowJst.getUTCDate(), hour, minute, 0)
   )
 
   if (
-    nextUpdate.getUTCHours() < jstNow.getUTCHours() ||
-    (nextUpdate.getUTCHours() === jstNow.getUTCHours() &&
-      nextUpdate.getUTCMinutes() <= jstNow.getUTCMinutes())
+    nextUpdate.getUTCHours() < nowJst.getUTCHours() ||
+    (nextUpdate.getUTCHours() === nowJst.getUTCHours() &&
+      nextUpdate.getUTCMinutes() <= nowJst.getUTCMinutes())
   ) {
     nextUpdate = new Date(
       Date.UTC(
-        jstNow.getUTCFullYear(),
-        jstNow.getUTCMonth(),
-        jstNow.getUTCDate() + 1,
+        nowJst.getUTCFullYear(),
+        nowJst.getUTCMonth(),
+        nowJst.getUTCDate() + 1,
         hour,
         minute,
         0
@@ -147,33 +136,102 @@ function formatNextUpdateLabel(endTime) {
     )
   }
 
-  return `次回更新: ${nextUpdate.getUTCFullYear()}/${pad2(nextUpdate.getUTCMonth() + 1)}/${pad2(
-    nextUpdate.getUTCDate()
-  )} ${pad2(nextUpdate.getUTCHours())}:${pad2(nextUpdate.getUTCMinutes())} JST`
+  return `\u6b21\u56de\u66f4\u65b0: ${nextUpdate.getUTCFullYear()}/${pad2(
+    nextUpdate.getUTCMonth() + 1
+  )}/${pad2(nextUpdate.getUTCDate())} ${pad2(nextUpdate.getUTCHours())}:${pad2(
+    nextUpdate.getUTCMinutes()
+  )} JST`
 }
 
-function fallbackPayload() {
+function extractFromRankSection($, section) {
+  const currentCard = $(section)
+    .find('.item')
+    .toArray()
+    .find((element) => normalize($(element).children().first().text()) === JP.current)
+
+  if (!currentCard) {
+    throw new Error(JP.currentBlockMissing)
+  }
+
+  const cardText = normalize($(currentCard).text())
+  const mapName = getCanonicalMapName(cardText)
+
+  if (!mapName) {
+    throw new Error(JP.mapNameMissing)
+  }
+
+  const asset = MAP_ASSET_MAP[mapName]
+  if (!asset) {
+    throw new Error(`Unsupported map: ${mapName}`)
+  }
+
   return {
-    name: 'Olympus',
-    mapName: 'Olympus',
-    slug: 'olympus',
-    image: '/maps/olympus.jpg',
-    updatedAtLabel: '次回更新: GameFavo 取得失敗',
+    ok: true,
+    name: asset.name,
+    slug: asset.slug,
+    image: asset.image,
+    updatedAtLabel: formatNextUpdateLabel(extractEndTime(cardText)),
     sourceUrl: RANKMAP_SOURCE_URL,
   }
 }
 
-function extractCurrentRankMap(lines) {
-  const rankSection = extractSection(lines, 'ランクマッチ')
-  const currentBlock = findCurrentBlock(rankSection)
-  const mapName = extractMapName(currentBlock)
-  const endTime = extractEndTime(currentBlock)
-  const asset = MAP_ASSET_MAP[mapName]
+function extractFromStructuredDom($) {
+  const heading = $('h3')
+    .toArray()
+    .find((element) => normalize($(element).text()) === JP.rankMatch)
 
-  return {
-    ...asset,
-    updatedAtLabel: formatNextUpdateLabel(endTime),
+  if (!heading) {
+    throw new Error(JP.rankSectionMissing)
   }
+
+  const section = $(heading).next('.marbox2')
+  if (!section.length) {
+    throw new Error(JP.rankSectionMissing)
+  }
+
+  return extractFromRankSection($, section)
+}
+
+function extractFromLooseDom($) {
+  const candidateSections = $('div.marbox2')
+    .toArray()
+    .filter((section) => {
+      const text = normalize($(section).text())
+      return text.includes(JP.current) && text.includes(JP.next)
+    })
+
+  for (const section of candidateSections) {
+    const text = normalize($(section).text())
+    if (!MAP_ALIASES.some((entry) => entry.aliases.some((alias) => text.includes(alias)))) {
+      continue
+    }
+
+    try {
+      return extractFromRankSection($, section)
+    } catch (error) {
+      continue
+    }
+  }
+
+  throw new Error(JP.rankSectionMissing)
+}
+
+function extractCurrentRankMap(html) {
+  const $ = cheerio.load(html)
+  $('script, style, noscript').remove()
+
+  const extractors = [extractFromStructuredDom, extractFromLooseDom]
+  const reasons = []
+
+  for (const extractor of extractors) {
+    try {
+      return extractor($)
+    } catch (error) {
+      reasons.push(error instanceof Error ? error.message : String(error))
+    }
+  }
+
+  throw new Error(reasons.join(' / ') || JP.parseFailed)
 }
 
 export default async function handler(req, res) {
@@ -191,23 +249,21 @@ export default async function handler(req, res) {
     })
 
     if (!response.ok) {
-      throw new Error(`Request failed: ${response.status}`)
+      return res
+        .status(200)
+        .json(buildErrorPayload('upstream_http_error', `GameFavo request failed: ${response.status}`))
     }
 
     const html = await response.text()
-    const lines = extractLines(html)
-    const current = extractCurrentRankMap(lines)
-
-    return res.status(200).json({
-      name: current.name,
-      mapName: current.name,
-      slug: current.slug,
-      image: current.image,
-      updatedAtLabel: current.updatedAtLabel,
-      sourceUrl: RANKMAP_SOURCE_URL,
-    })
+    return res.status(200).json(extractCurrentRankMap(html))
   } catch (error) {
-    console.error('rankmap error', error instanceof Error ? error.message : error)
-    return res.status(200).json(fallbackPayload())
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    const errorType =
+      /fetch failed|network|request failed|econn|enotfound|timedout/i.test(message)
+        ? 'network_error'
+        : 'parse_failed'
+
+    console.error('rankmap error', message)
+    return res.status(200).json(buildErrorPayload(errorType, message))
   }
 }

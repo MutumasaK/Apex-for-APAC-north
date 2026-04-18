@@ -20,7 +20,7 @@ function pendingPayload(now = new Date()) {
         title: '自チームのESCLスクリム情報',
         dateLabel: '',
         statusLabel: '確認中',
-        note: '本日のESCLスクリムは、21:00 JST以降に参加状況を確認します。',
+        note: '',
       },
     ],
     meta: {

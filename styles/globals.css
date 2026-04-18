@@ -191,6 +191,144 @@ img {
   gap: 12px;
 }
 
+.competitiveCard {
+  display: grid;
+  gap: 22px;
+}
+
+.competitiveBlock {
+  display: grid;
+  gap: 14px;
+}
+
+.competitiveBlockHeader {
+  display: grid;
+  gap: 4px;
+}
+
+.competitiveBlockLabel {
+  margin: 0;
+  color: #a8843d;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+}
+
+.competitiveBlockTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: #1c2330;
+}
+
+.competitiveDivider {
+  height: 1px;
+  background: #ece4d8;
+}
+
+.proLeagueList {
+  display: grid;
+  gap: 12px;
+}
+
+.proLeagueRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 14px;
+  background: #f8f5ef;
+}
+
+.proLeagueMain {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.proLeagueRank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 10px;
+  border-radius: 9999px;
+  background: #f2dfba;
+  color: #8b5e12;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.proLeagueTeamBlock {
+  min-width: 0;
+}
+
+.proLeagueTeamIcon {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid rgba(168, 132, 61, 0.16);
+  padding: 6px;
+}
+
+.proLeagueTeamIcon--dark {
+  background: linear-gradient(135deg, #2a2f42, #171c2c);
+  border-color: rgba(28, 35, 48, 0.2);
+}
+
+.proLeagueTeamName {
+  display: block;
+  color: #1c2330;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.proLeaguePlayers {
+  margin: 4px 0 0;
+  color: #7a6850;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.proLeagueStats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.proLeagueStat {
+  min-width: 84px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(242, 223, 186, 0.42);
+  text-align: right;
+}
+
+.proLeagueStat span {
+  display: block;
+  color: #8b6f3e;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.proLeagueStat strong {
+  display: block;
+  margin-top: 4px;
+  color: #1c2330;
+  font-size: 20px;
+  line-height: 1.1;
+}
+
 .resultCardRow {
   padding: 16px;
   border-radius: 14px;
@@ -993,6 +1131,7 @@ img {
 
   .ratePointCard__top,
   .newsList__item,
+  .proLeagueRow,
   .resultCardRow__top,
   .legendMetaRateRow,
   .agentRankCard__top,
@@ -1005,6 +1144,22 @@ img {
   .newsList__item small {
     text-align: left;
     min-width: auto;
+  }
+
+  .proLeagueMain,
+  .proLeagueStats {
+    width: 100%;
+  }
+
+  .proLeagueStats {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .proLeagueStat {
+    min-width: 0;
+    flex: 1 1 120px;
+    text-align: left;
   }
 
   .apexMapImage,
@@ -1022,5 +1177,201 @@ img {
 
   .detailImageModal__dialog {
     padding: 14px;
+  }
+}/* =========================
+   Apex 右カード 視認性改善
+========================= */
+
+.gridTwo {
+  align-items: start;
+}
+
+.rankSceneCard {
+  display: grid;
+  gap: 34px;
+}
+
+.rankSceneCard .competitiveBlock {
+  display: grid;
+  gap: 16px;
+}
+
+.rankSceneCard .competitiveBlockHeader {
+  margin-bottom: 6px;
+}
+
+.rankSceneCard .competitiveDivider {
+  height: 1px;
+  margin: 0;
+  background: #e3d6c0;
+}
+
+.apexMapCard {
+  overflow: hidden;
+  border-radius: 18px;
+  background: #f8f5ef;
+  border: 1px solid rgba(168, 132, 61, 0.08);
+}
+
+.apexMapImage {
+  width: 100%;
+  height: 152px;
+  object-fit: cover;
+  object-position: center;
+}
+
+.apexMapMeta {
+  padding: 14px 16px 14px;
+}
+
+.rankLegendGrid {
+  display: grid;
+  gap: 12px;
+}
+
+.legendMetaCard {
+  padding: 14px 14px 12px;
+  border-radius: 16px;
+  background: #f8f5ef;
+  border: 1px solid rgba(168, 132, 61, 0.06);
+}
+
+.legendMetaCard__top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.legendMetaCard__top strong {
+  font-size: 15px;
+  line-height: 1.35;
+  color: #16233b;
+}
+
+.legendMetaRank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #efe0b8;
+  color: #8b5e12;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.legendMetaRateRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.legendMetaRateLabel {
+  font-size: 11px;
+  color: #8b6f3e;
+}
+
+.legendMetaRateValue {
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 700;
+  color: #16233b;
+  font-variant-numeric: tabular-nums;
+}
+
+.legendMetaBar {
+  height: 6px;
+  border-radius: 999px;
+  background: #e9dfcf;
+  overflow: hidden;
+}
+
+.legendMetaBar__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #c79b3b 0%, #d9b668 100%);
+}
+
+.legendMetaToggleWrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.legendMetaToggleButton {
+  min-width: 132px;
+  height: 40px;
+  padding: 0 18px;
+  border: 1px solid #e3d6c0;
+  border-radius: 999px;
+  background: #fffdf8;
+  color: #8b5e12;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.legendMetaToggleButton:hover {
+  background: #f8f1e3;
+  transform: translateY(-1px);
+}
+
+.proLeagueStat strong,
+.ratePointCard__value,
+.legendMetaRateValue {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 901px) {
+  .gridTwo {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .rankSceneCard {
+    gap: 26px;
+  }
+
+  .rankSceneCard .competitiveBlock {
+    gap: 14px;
+  }
+
+  .rankSceneCard .competitiveBlockHeader {
+    margin-bottom: 4px;
+  }
+
+  .apexMapImage {
+    height: 180px;
+  }
+
+  .legendMetaCard {
+    padding: 13px 12px 11px;
+  }
+
+  .legendMetaCard__top {
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .legendMetaCard__top strong {
+    font-size: 14px;
+  }
+
+  .legendMetaRateValue {
+    font-size: 15px;
+  }
+
+  .legendMetaToggleButton {
+    width: 100%;
   }
 }
