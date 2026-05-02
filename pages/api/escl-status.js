@@ -1,13 +1,13 @@
 import {
   computeEsclStatus,
+  computeEsclTeamStatus,
   formatJst,
   isAfter21Jst,
   isRedisEnabled,
   readEsclStatus,
   saveEsclStatus,
 } from '../../lib/escl-status-core'
-
-const TEAM_NAME = process.env.ESCL_TARGET_TEAM_NAME || '京都ブライアンホテル'
+import { DEFAULT_TEAM_NAME } from '../../lib/site'
 
 function pendingPayload(now = new Date()) {
   const updatedAtLabel = `最終確認: ${formatJst(now)}`
@@ -17,14 +17,14 @@ function pendingPayload(now = new Date()) {
     items: [
       {
         id: 'scrim-pending',
-        title: '自チームのESCLスクリム情報',
+        title: '本日の ESCL スクリム情報',
         dateLabel: '',
         statusLabel: '確認中',
         note: '',
       },
     ],
     meta: {
-      teamName: TEAM_NAME,
+      teamName: DEFAULT_TEAM_NAME,
       ratePoint: 0,
       rateUpdatedAt: updatedAtLabel,
     },
@@ -42,26 +42,26 @@ function errorPayload(error) {
   const updatedAtLabel = `最終確認: ${formatJst(now)}`
   const message =
     error instanceof Error
-      ? `ESCLステータスの取得に失敗しました: ${error.message}`
-      : 'ESCLステータスの取得に失敗しました。'
+      ? `ESCL ステータスの取得に失敗しました: ${error.message}`
+      : 'ESCL ステータスの取得に失敗しました。'
 
   return {
     date: null,
     items: [
       {
         id: 'scrim-error',
-        title: '自チームのESCLスクリム情報',
+        title: '本日の ESCL スクリム情報',
         dateLabel: '',
-        statusLabel: '未確認',
+        statusLabel: '確認中',
         note: message,
       },
     ],
     meta: {
-      teamName: TEAM_NAME,
+      teamName: DEFAULT_TEAM_NAME,
       ratePoint: 0,
       rateUpdatedAt: updatedAtLabel,
     },
-    status: '未確認',
+    status: '確認中',
     group: null,
     scrimId: null,
     scrimName: null,
@@ -76,7 +76,18 @@ export default async function handler(req, res) {
   }
 
   try {
+    const { teamName, teamId, teamSlug } = req.query
     const now = new Date()
+
+    if (teamName || teamId || teamSlug) {
+      const data = await computeEsclTeamStatus({
+        teamName: typeof teamName === 'string' ? teamName : undefined,
+        teamId: typeof teamId === 'string' ? Number(teamId) : undefined,
+        teamSlug: typeof teamSlug === 'string' ? teamSlug : undefined,
+      })
+
+      return res.status(200).json(data)
+    }
 
     if (isRedisEnabled()) {
       const stored = await readEsclStatus(now)

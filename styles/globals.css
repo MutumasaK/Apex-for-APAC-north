@@ -1337,6 +1337,704 @@ img {
   }
 }
 
+/* Shared site pages */
+.siteShell {
+  min-height: 100vh;
+  background: #f6f2ea;
+}
+
+.siteHeader {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-bottom: 1px solid rgba(28, 35, 48, 0.08);
+  background: rgba(255, 253, 248, 0.92);
+  backdrop-filter: blur(10px);
+}
+
+.siteHeader__inner {
+  width: min(100%, 1180px);
+  margin: 0 auto;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.siteBrand {
+  display: grid;
+  gap: 2px;
+  min-width: 180px;
+}
+
+.siteBrand__eyebrow,
+.siteFooter__eyebrow {
+  color: #a8843d;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+}
+
+.siteBrand strong {
+  color: #1c2330;
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.siteNav {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.siteNav__link {
+  padding: 8px 10px;
+  border-radius: 9999px;
+  color: #5f6772;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.siteNav__link:hover {
+  background: #f2dfba;
+  color: #8b5e12;
+}
+
+.pageMain {
+  width: min(100%, 1180px);
+  margin: 0 auto;
+  padding: 48px 24px 76px;
+}
+
+.pageHero {
+  margin-bottom: 36px;
+  padding: 34px 36px;
+  border-radius: 28px;
+  background: #fff;
+  border: 1px solid rgba(28, 35, 48, 0.06);
+  box-shadow: 0 16px 40px rgba(28, 35, 48, 0.08);
+}
+
+.pageHero--light {
+  background:
+    radial-gradient(circle at 14% 0%, rgba(216, 179, 106, 0.2), transparent 32%),
+    #fffdf8;
+}
+
+.pageHero h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(34px, 5vw, 52px);
+  font-weight: 600;
+  line-height: 1.32;
+  letter-spacing: 0;
+}
+
+.pageHero__lead {
+  max-width: 780px;
+  margin: 16px 0 0;
+  color: #5f6772;
+  font-size: 16px;
+  line-height: 2;
+}
+
+.pageSection {
+  margin-top: 30px;
+}
+
+.cardGrid {
+  display: grid;
+  gap: 24px;
+}
+
+.cardGrid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cardGrid--single {
+  grid-template-columns: 1fr;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.cardHeader h2,
+.cardHeader h3,
+.card h2,
+.card h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  letter-spacing: 0;
+  line-height: 1.4;
+}
+
+.cardLead {
+  margin: 0 0 18px;
+  color: #5f6772;
+  font-size: 15px;
+  line-height: 1.9;
+}
+
+.inlineLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 7px 12px;
+  border-radius: 9999px;
+  background: #f2dfba;
+  color: #8b5e12;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.inlineLink--back {
+  margin-bottom: 16px;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.button--primary {
+  background: #c89b46;
+  color: #fff;
+}
+
+.button--ghost {
+  border: 1px solid rgba(168, 132, 61, 0.28);
+  background: #fffdf8;
+  color: #8b5e12;
+}
+
+.heroActionRow,
+.formActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+}
+
+.softPanel {
+  padding: 18px;
+  border-radius: 16px;
+  background: #f8f5ef;
+  color: #5f6772;
+  line-height: 1.8;
+}
+
+.softPanel strong {
+  display: block;
+  color: #1c2330;
+  margin-bottom: 6px;
+}
+
+.teamHeroCard {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.teamHeroCard > div {
+  min-width: 0;
+  padding: 16px;
+  border-radius: 16px;
+  background: #f8f5ef;
+}
+
+.teamHeroCard__label {
+  margin: 0 0 6px;
+  color: #8b6f3e;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.teamHeroCard strong {
+  display: block;
+  overflow-wrap: anywhere;
+  color: #1c2330;
+  font-size: 20px;
+  line-height: 1.5;
+}
+
+.linkList {
+  display: grid;
+  gap: 12px;
+}
+
+.listLink {
+  display: grid;
+  gap: 4px;
+  padding: 16px;
+  border-radius: 16px;
+  background: #f8f5ef;
+}
+
+.listLink strong {
+  color: #1c2330;
+}
+
+.listLink span {
+  color: #5f6772;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.fieldLabel,
+.checkboxField {
+  display: grid;
+  gap: 8px;
+  color: #5f6772;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.textInput,
+.textArea {
+  width: 100%;
+  border: 1px solid #e9dfd0;
+  border-radius: 14px;
+  background: #fffdf8;
+  color: #1c2330;
+  font: inherit;
+}
+
+.textInput {
+  min-height: 44px;
+  padding: 8px 12px;
+}
+
+.textArea {
+  padding: 12px;
+  resize: vertical;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.contactForm {
+  display: grid;
+  gap: 18px;
+}
+
+.honeypotField {
+  position: absolute;
+  left: -9999px;
+}
+
+.formMessage {
+  margin: 0;
+  color: #5f6772;
+  font-size: 14px;
+}
+
+.formMessage--success {
+  color: #2f7d42;
+}
+
+.formMessage--error {
+  color: #b34040;
+}
+
+.searchResults {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.searchResultItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 14px;
+  border: 0;
+  border-radius: 16px;
+  background: #f8f5ef;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.searchResultItem strong {
+  overflow-wrap: anywhere;
+}
+
+.searchResultItem span {
+  flex: 0 0 auto;
+  color: #8b6f3e;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.detailSummaryCard {
+  padding: 22px;
+  border-radius: 18px;
+  background: #f8f5ef;
+}
+
+.detailSummaryCard strong {
+  display: block;
+  font-size: 26px;
+}
+
+.detailSummaryCard p,
+.detailSummaryCard span {
+  color: #5f6772;
+  line-height: 1.8;
+}
+
+.detailStack {
+  display: grid;
+  gap: 14px;
+}
+
+.detailList {
+  margin: 0 0 18px;
+  padding-left: 20px;
+  color: #5f6772;
+  line-height: 2;
+}
+
+.featureGrid,
+.pricingGrid,
+.mapGrid {
+  display: grid;
+  gap: 18px;
+}
+
+.featureGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.pricingGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.pricingCard {
+  display: flex;
+  flex-direction: column;
+}
+
+.pricingCard .button {
+  margin-top: auto;
+}
+
+.mapGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.valorantMapCard,
+.mapCard {
+  overflow: hidden;
+  border-radius: 18px;
+  background: #f8f5ef;
+  border: 1px solid rgba(28, 35, 48, 0.06);
+}
+
+.valorantMapThumb {
+  position: relative;
+  overflow: hidden;
+}
+
+.valorantMapImage,
+.mapCard__image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.valorantMapOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 18px;
+  background: linear-gradient(180deg, transparent 30%, rgba(0, 0, 0, 0.68));
+  color: #fff;
+}
+
+.valorantMapOverlay span {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.valorantMapOverlay strong {
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+.valorantMapMeta,
+.mapCard__body {
+  padding: 15px 16px 16px;
+}
+
+.mapName {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  color: #5f4717;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.mapGuideLink {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  background: #f2dfba;
+  color: #8b5e12;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.mapCard {
+  display: block;
+}
+
+.mapCard__eyebrow {
+  margin: 0 0 6px;
+  color: #a8843d;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.mapCard__body strong {
+  display: block;
+  color: #1c2330;
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+.mapCard__body span {
+  display: block;
+  margin-top: 8px;
+  color: #5f6772;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.detailImage {
+  width: 100%;
+  border-radius: 18px;
+  object-fit: cover;
+}
+
+.proMetaCard__subtitle {
+  margin: 6px 0 0;
+  color: #5f6772;
+}
+
+.proMetaCard__meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+  color: #8b6f3e;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.proMatchGrid {
+  display: grid;
+  gap: 18px;
+}
+
+.proMatchGrid--compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.proMatchBlock {
+  padding: 18px;
+  border-radius: 18px;
+  background: #f8f5ef;
+}
+
+.proMatchBlock__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.proMatchBlock__header span {
+  color: #8b6f3e;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.proCompList {
+  display: grid;
+  gap: 12px;
+}
+
+.proCompItem {
+  padding: 14px;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.proCompItem__top,
+.proCompItem__details {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.legendTagRow {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.legendTag {
+  display: inline-flex;
+  padding: 4px 8px;
+  border-radius: 9999px;
+  background: #f2dfba;
+  color: #8b5e12;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.proCompItem__rate {
+  color: #1c2330;
+  font-size: 22px;
+}
+
+.proCompItem__details {
+  margin-top: 10px;
+  color: #8b6f3e;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.proCompItem p {
+  margin: 10px 0 0;
+  color: #5f6772;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.siteFooter {
+  border-top: 1px solid #e9dfd0;
+  background: #fffdf8;
+}
+
+.siteFooter__inner {
+  width: min(100%, 1180px);
+  margin: 0 auto;
+  padding: 34px 24px;
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr 1fr;
+  gap: 24px;
+}
+
+.siteFooter h2 {
+  margin: 6px 0 8px;
+  font-family: var(--font-display);
+  font-size: 26px;
+  line-height: 1.4;
+}
+
+.siteFooter__lead,
+.siteFooter__cta p {
+  margin: 0;
+  color: #5f6772;
+  line-height: 1.8;
+}
+
+.siteFooter__links {
+  display: grid;
+  gap: 8px;
+}
+
+.siteFooter__links a {
+  color: #5f6772;
+  font-weight: 700;
+}
+
+.siteFooter__cta {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+@media (max-width: 900px) {
+  .siteHeader__inner,
+  .cardHeader,
+  .searchResultItem,
+  .proCompItem__top,
+  .proCompItem__details {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .cardGrid--two,
+  .featureGrid,
+  .pricingGrid,
+  .mapGrid,
+  .proMatchGrid--compact,
+  .siteFooter__inner {
+    grid-template-columns: 1fr;
+  }
+
+  .teamHeroCard,
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .pageMain {
+    padding: 34px 16px 56px;
+  }
+
+  .pageHero {
+    padding: 24px 20px;
+    border-radius: 22px;
+  }
+
+  .siteHeader__inner {
+    padding: 14px 16px;
+  }
+
+  .valorantMapImage,
+  .mapCard__image {
+    height: 180px;
+  }
+}
+
 @media (max-width: 640px) {
   .rankSceneCard {
     gap: 26px;
