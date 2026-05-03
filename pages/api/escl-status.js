@@ -97,7 +97,11 @@ export default async function handler(req, res) {
     }
 
     if (!isAfter21Jst(now)) {
-      return res.status(200).json(pendingPayload(now))
+      const computed = await computeEsclStatus(now)
+      return res.status(200).json({
+        ...computed,
+        source: 'live-pending',
+      })
     }
 
     const computed = await computeEsclStatus(now)

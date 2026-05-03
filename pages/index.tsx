@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import SeoHead from '../components/SeoHead'
+import { SITE_DESCRIPTION, SITE_NAME } from '../lib/site'
 
 type ScrimItem = {
   id: string
@@ -20,11 +22,6 @@ type RankMapItem = {
   slug: string
   image: string
   updatedAtLabel: string
-}
-
-type RankMapError = {
-  errorType: string
-  message: string
 }
 
 type ProLeagueItem = {
@@ -69,29 +66,15 @@ const currentValorantMaps: ValorantMapCardItem[] = [
 ]
 
 const archiveValorantMaps: ValorantMapCardItem[] = [
-  {
-    name: 'Abyss',
-    slug: 'abyss',
-    image: '/valorant/abyss.jpg',
-    status: 'archive',
-    archiveLabel: 'アーカイブ',
-  },
-  {
-    name: 'Corrode',
-    slug: 'corrode',
-    image: '/valorant/corrode.jpg',
-    status: 'archive',
-    archiveLabel: 'アーカイブ',
-  },
+  { name: 'Abyss', slug: 'abyss', image: '/valorant/abyss.jpg', status: 'archive', archiveLabel: 'アーカイブ' },
+  { name: 'Corrode', slug: 'corrode', image: '/valorant/corrode.jpg', status: 'archive', archiveLabel: 'アーカイブ' },
 ]
-
-const darkIconTeamNames = new Set(['REJECT'])
 
 function fallbackScrims(): ScrimItem[] {
   return [
     {
       id: 'scrim-fallback',
-      title: '自チームのESCLスクリム情報',
+      title: 'ESCLチーム情報',
       dateLabel: '',
       statusLabel: '確認中',
       note: 'ESCL参加状況を確認しています。',
@@ -105,14 +88,6 @@ function fallbackScrimMeta(): ScrimMeta {
     ratePoint: 0,
     rateUpdatedAt: '最終確認: 確認中',
   }
-}
-
-function fallbackRankMap(): RankMapItem | null {
-  return null
-}
-
-function fallbackProLeague(): ProLeagueItem[] {
-  return []
 }
 
 function fallbackApexNews(): NewsItem[] {
@@ -161,9 +136,7 @@ async function fetchJson(url: string) {
 }
 
 function normalizeScrimResponse(payload: any): ScrimItem[] {
-  const source = Array.isArray(payload)
-    ? payload
-    : payload?.items ?? payload?.scrims ?? payload?.data ?? []
+  const source = Array.isArray(payload) ? payload : payload?.items ?? payload?.scrims ?? payload?.data ?? []
 
   if (!Array.isArray(source) || source.length === 0) {
     return fallbackScrims()
@@ -171,7 +144,7 @@ function normalizeScrimResponse(payload: any): ScrimItem[] {
 
   return source.slice(0, 3).map((item: any, index: number) => ({
     id: String(item?.id ?? `scrim-${index}`),
-    title: String(item?.title ?? '自チームのESCLスクリム情報'),
+    title: String(item?.title ?? 'ESCLチーム情報'),
     dateLabel: String(item?.dateLabel ?? ''),
     statusLabel: String(item?.statusLabel ?? item?.status ?? '確認中'),
     note: String(item?.note ?? '詳細を確認しています。'),
@@ -189,12 +162,8 @@ function normalizeScrimMeta(payload: any): ScrimMeta {
 }
 
 function normalizeRankMapResponse(payload: any): RankMapItem | null {
-  if (!payload || typeof payload !== 'object') {
-    return fallbackRankMap()
-  }
-
-  if (payload?.ok === false) {
-    return fallbackRankMap()
+  if (!payload || typeof payload !== 'object' || payload?.ok === false) {
+    return null
   }
 
   const name = String(payload?.name ?? payload?.mapName ?? '')
@@ -202,7 +171,7 @@ function normalizeRankMapResponse(payload: any): RankMapItem | null {
   const image = String(payload?.image ?? '')
 
   if (!name || !slug || !image) {
-    return fallbackRankMap()
+    return null
   }
 
   return {
@@ -213,22 +182,11 @@ function normalizeRankMapResponse(payload: any): RankMapItem | null {
   }
 }
 
-function normalizeRankMapError(payload: any): RankMapError | null {
-  if (!payload || typeof payload !== 'object' || payload?.ok !== false) {
-    return null
-  }
-
-  return {
-    errorType: String(payload?.errorType ?? 'unknown'),
-    message: String(payload?.message ?? 'ランクマップの取得に失敗しました'),
-  }
-}
-
 function normalizeProLeagueResponse(payload: any): ProLeagueItem[] {
   const source = Array.isArray(payload) ? payload : payload?.items ?? payload?.data ?? []
 
   if (!Array.isArray(source) || source.length === 0) {
-    return fallbackProLeague()
+    return []
   }
 
   return source
@@ -241,23 +199,13 @@ function normalizeProLeagueResponse(payload: any): ProLeagueItem[] {
       players: Array.isArray(item?.players)
         ? item.players.map((player: unknown) => String(player)).filter(Boolean)
         : [],
-      iconUrl: String(item?.iconUrl ?? ''),
+      iconUrl: String(item?.logoUrl ?? item?.iconUrl ?? ''),
     }))
     .filter((item: ProLeagueItem) => item.rank > 0 && item.teamName)
 }
 
-function normalizeProLeagueError(payload: any): string | null {
-  if (!payload || typeof payload !== 'object' || payload?.ok !== false) {
-    return null
-  }
-
-  return String(payload?.message ?? '現在のPro League総合順位は取得できませんでした。')
-}
-
 function normalizeNewsResponse(payload: any, fallback: NewsItem[]): NewsItem[] {
-  const source = Array.isArray(payload)
-    ? payload
-    : payload?.items ?? payload?.news ?? payload?.articles ?? payload?.data ?? []
+  const source = Array.isArray(payload) ? payload : payload?.items ?? payload?.news ?? payload?.articles ?? payload?.data ?? []
 
   if (!Array.isArray(source) || source.length === 0) {
     return fallback
@@ -274,9 +222,7 @@ function normalizeNewsResponse(payload: any, fallback: NewsItem[]): NewsItem[] {
 }
 
 function normalizeLegendMetaResponse(payload: any): ApexLegendMetaItem[] {
-  const source = Array.isArray(payload)
-    ? payload
-    : payload?.items ?? payload?.data ?? payload?.result ?? []
+  const source = Array.isArray(payload) ? payload : payload?.items ?? payload?.data ?? payload?.result ?? []
 
   if (!Array.isArray(source) || source.length === 0) {
     return fallbackLegendMeta()
@@ -290,24 +236,58 @@ function normalizeLegendMetaResponse(payload: any): ApexLegendMetaItem[] {
     }))
     .filter((item: ApexLegendMetaItem) => item.name)
 
-  if (items.length === 0) {
-    return fallbackLegendMeta()
-  }
-
-  return items.some((item) => item.pickRate > 0) ? items : fallbackLegendMeta()
+  return items.length > 0 ? items : fallbackLegendMeta()
 }
 
-function ValorantMapCard({
-  map,
-  archive = false,
+function SectionTitle({
+  eyebrow,
+  title,
+  href,
 }: {
-  map: ValorantMapCardItem
-  archive?: boolean
+  eyebrow: string
+  title: string
+  href: string
 }) {
+  return (
+    <div className="sectionHeader">
+      <p className="sectionHeader__sub">{eyebrow}</p>
+      <Link href={href} className="sectionTitleLink">
+        <h2>{title}</h2>
+        <span>詳細を見る</span>
+      </Link>
+    </div>
+  )
+}
+
+function CardTitle({
+  eyebrow,
+  title,
+  href,
+}: {
+  eyebrow: string
+  title: string
+  href: string
+}) {
+  return (
+    <div className="sectionHeader sectionHeader--compact">
+      <p className="sectionHeader__sub">{eyebrow}</p>
+      <Link href={href} className="sectionTitleLink sectionTitleLink--small">
+        <h3>{title}</h3>
+        <span>詳細を見る</span>
+      </Link>
+    </div>
+  )
+}
+
+function ValorantMapCard({ map, archive = false }: { map: ValorantMapCardItem; archive?: boolean }) {
   return (
     <article className={`valorantMapCard${archive ? ' valorantMapCard--archive' : ''}`}>
       <div className="valorantMapImageWrap">
         <img src={map.image} alt={map.name} className="valorantMapImage" />
+        <div className="valorantMapOverlay">
+          <span>{archive ? 'ARCHIVE MAP' : 'VALORANT MAP'}</span>
+          <strong>{map.name}</strong>
+        </div>
         {archive && map.archiveLabel ? <span className="archiveBadge">{map.archiveLabel}</span> : null}
       </div>
 
@@ -315,7 +295,7 @@ function ValorantMapCard({
         <div className="mapFooterRow">
           <p className="mapName">{map.name}</p>
           <Link href={`/valorant/${map.slug}`} className="mapGuideLink">
-            マップ解説
+            マップ攻略
           </Link>
         </div>
       </div>
@@ -323,19 +303,54 @@ function ValorantMapCard({
   )
 }
 
-function getProLeagueIconClassName(teamName: string) {
-  return darkIconTeamNames.has(teamName)
-    ? 'proLeagueTeamIcon proLeagueTeamIcon--dark'
-    : 'proLeagueTeamIcon'
+function getTeamInitials(teamName: string) {
+  const normalized = teamName.trim()
+  const upperName = normalized.toUpperCase()
+
+  if (upperName.includes('ZETA')) return 'ZETA'
+  if (upperName.includes('UNLIMIT')) return 'UNL'
+  if (upperName.includes('ENTER FORCE')) return 'E36'
+  if (upperName.includes('KINOTROPE')) return 'KNT'
+  if (upperName.includes('WGR')) return 'WGR'
+
+  return normalized
+    .split(/\s+/)
+    .map((word) => word[0])
+    .join('')
+    .slice(0, 4)
+    .toUpperCase()
+}
+
+function shouldUseTeamLogoFallback(teamName: string) {
+  const upperName = teamName.trim().toUpperCase()
+
+  return upperName.includes('ZETA') || upperName.includes('WGR')
+}
+
+function TeamLogo({ name, logoUrl }: { name: string; logoUrl?: string | null }) {
+  const [failed, setFailed] = useState(false)
+  const fallback = getTeamInitials(name)
+
+  if (!logoUrl || failed || shouldUseTeamLogoFallback(name)) {
+    return (
+      <div className="teamLogo teamLogo--fallback" aria-label={name}>
+        {fallback || '?'}
+      </div>
+    )
+  }
+
+  return (
+    <div className="teamLogo" aria-label={name}>
+      <img src={logoUrl} alt={`${name} logo`} onError={() => setFailed(true)} />
+    </div>
+  )
 }
 
 export default function HomePage() {
   const [scrims, setScrims] = useState<ScrimItem[]>(fallbackScrims())
   const [scrimMeta, setScrimMeta] = useState<ScrimMeta>(fallbackScrimMeta())
-  const [rankMap, setRankMap] = useState<RankMapItem | null>(fallbackRankMap())
-  const [rankMapError, setRankMapError] = useState<RankMapError | null>(null)
-  const [proLeagueItems, setProLeagueItems] = useState<ProLeagueItem[]>(fallbackProLeague())
-  const [proLeagueError, setProLeagueError] = useState<string | null>(null)
+  const [rankMap, setRankMap] = useState<RankMapItem | null>(null)
+  const [proLeagueItems, setProLeagueItems] = useState<ProLeagueItem[]>([])
   const [apexNews, setApexNews] = useState<NewsItem[]>(fallbackApexNews())
   const [valorantNews, setValorantNews] = useState<NewsItem[]>(fallbackValorantNews())
   const [legendMeta, setLegendMeta] = useState<ApexLegendMetaItem[]>(fallbackLegendMeta())
@@ -350,55 +365,32 @@ export default function HomePage() {
     let mounted = true
 
     async function load() {
-      const [
-        proLeagueResult,
-        scrimResult,
-        rankMapResult,
-        apexNewsResult,
-        valorantNewsResult,
-        legendMetaResult,
-      ] = await Promise.allSettled([
-        fetchJson('/api/apex-proleague'),
-        fetchJson('/api/escl-status'),
-        fetchJson('/api/rankmap'),
-        fetchJson('/api/apex-news'),
-        fetchJson('/api/valorant-news'),
-        fetchJson('/api/apex-pick-rates'),
-      ])
+      const [proLeagueResult, scrimResult, rankMapResult, apexNewsResult, valorantNewsResult, legendMetaResult] =
+        await Promise.allSettled([
+          fetchJson('/api/apex-proleague'),
+          fetchJson('/api/escl-status'),
+          fetchJson('/api/rankmap'),
+          fetchJson('/api/apex-news'),
+          fetchJson('/api/valorant-news'),
+          fetchJson('/api/apex-pick-rates'),
+        ])
 
       if (!mounted) return
 
       if (proLeagueResult.status === 'fulfilled') {
         setProLeagueItems(normalizeProLeagueResponse(proLeagueResult.value))
-        setProLeagueError(normalizeProLeagueError(proLeagueResult.value))
-      } else {
-        setProLeagueItems(fallbackProLeague())
-        setProLeagueError('現在のPro League総合順位は取得できませんでした。')
       }
-
       setLoadingState((prev) => ({ ...prev, proLeague: false }))
 
       if (scrimResult.status === 'fulfilled') {
         setScrims(normalizeScrimResponse(scrimResult.value))
         setScrimMeta(normalizeScrimMeta(scrimResult.value))
       }
-
       setLoadingState((prev) => ({ ...prev, scrim: false }))
 
       if (rankMapResult.status === 'fulfilled') {
-        const nextRankMap = normalizeRankMapResponse(rankMapResult.value)
-        const nextRankMapError = normalizeRankMapError(rankMapResult.value)
-
-        setRankMap(nextRankMap)
-        setRankMapError(nextRankMapError)
-      } else {
-        setRankMap(null)
-        setRankMapError({
-          errorType: 'request_failed',
-          message: 'ランクマップの取得に失敗しました',
-        })
+        setRankMap(normalizeRankMapResponse(rankMapResult.value))
       }
-
       setLoadingState((prev) => ({ ...prev, rankMap: false }))
 
       if (apexNewsResult.status === 'fulfilled') {
@@ -422,46 +414,42 @@ export default function HomePage() {
   }, [])
 
   const heroScrimStatus = loadingState.scrim ? '確認中' : scrims[0]?.statusLabel ?? '未確認'
-  const heroApexStatus = loadingState.rankMap ? '確認中' : rankMap ? rankMap.name : '取得失敗'
+  const heroApexStatus = loadingState.rankMap ? '確認中' : rankMap ? rankMap.name : '取得中'
   const visibleLegendMeta = showAllLegends ? legendMeta.slice(0, 5) : legendMeta.slice(0, 3)
 
   return (
     <div className="site-shell">
+      <SeoHead title={`${SITE_NAME} | Home`} description={SITE_DESCRIPTION} path="/" />
+
       <header className="hero">
         <div className="hero__content">
           <p className="eyebrow">APEX DASHBOARD</p>
           <h1>必要な情報を、ひと目で。</h1>
           <p className="hero__lead">
-            Apex と VALORANT の最新情報、ESCL参加状況、ランクマップをまとめて確認できます。
+            Apex と VALORANT の最新情報、ESCL参加状況、ランクマップ、AI Coachをまとめて確認できます。
           </p>
 
           <div className="hero__statusRow hero__statusRow--two">
-            <div className="statusCard">
+            <Link href="/escl" className="statusCard statusCard--link">
               <span className="statusCard__label">ESCL SCRIM</span>
               <strong className={!loadingState.scrim ? 'ok' : ''}>{heroScrimStatus}</strong>
-            </div>
+            </Link>
 
-            <div className="statusCard">
+            <Link href="/apex/rank-map" className="statusCard statusCard--link">
               <span className="statusCard__label">APEX RANK MAP</span>
               <strong>{heroApexStatus}</strong>
-            </div>
+            </Link>
           </div>
         </div>
       </header>
 
       <main className="main">
         <section className="section">
-          <div className="sectionHeader">
-            <p className="sectionHeader__sub">APEX</p>
-            <h2>Apex の情報</h2>
-          </div>
+          <SectionTitle eyebrow="APEX" title="Apex の情報" href="/apex" />
 
           <div className="gridTwo">
             <article className="card">
-              <div className="sectionHeader sectionHeader--compact">
-                <p className="sectionHeader__sub">APEX COMPETITIVE</p>
-                <h3>競技シーン</h3>
-              </div>
+              <CardTitle eyebrow="APEX COMPETITIVE" title="競技シーン" href="/escl" />
 
               <div className="competitiveCard">
                 <section className="competitiveBlock">
@@ -478,13 +466,7 @@ export default function HomePage() {
                         <article key={`${item.rank}-${item.teamName}`} className="proLeagueRow">
                           <div className="proLeagueMain">
                             <span className="proLeagueRank">#{item.rank}</span>
-                            {item.iconUrl ? (
-                              <img
-                                src={item.iconUrl}
-                                alt={`${item.teamName} icon`}
-                                className={getProLeagueIconClassName(item.teamName)}
-                              />
-                            ) : null}
+                            <TeamLogo name={item.teamName} logoUrl={item.iconUrl} />
                             <div className="proLeagueTeamBlock">
                               <strong className="proLeagueTeamName">{item.teamName}</strong>
                               {item.players.length > 0 ? (
@@ -507,9 +489,7 @@ export default function HomePage() {
                       ))}
                     </div>
                   ) : (
-                    <div className="loadingPanel">
-                      {proLeagueError ?? '現在のPro League総合順位は取得できませんでした。'}
-                    </div>
+                    <div className="loadingPanel">現在のPro League総合順位は取得できませんでした。</div>
                   )}
                 </section>
 
@@ -518,7 +498,10 @@ export default function HomePage() {
                 <section className="competitiveBlock">
                   <div className="competitiveBlockHeader">
                     <p className="competitiveBlockLabel">SCRIM</p>
-                    <h4 className="competitiveBlockTitle">スクリム</h4>
+                    <Link href="/escl" className="sectionTitleLink sectionTitleLink--small">
+                      <h4 className="competitiveBlockTitle">ESCLチーム情報</h4>
+                      <span>詳細を見る</span>
+                    </Link>
                   </div>
 
                   <div className="resultList">
@@ -536,26 +519,28 @@ export default function HomePage() {
 
                   <div className="ratePointCard">
                     <div className="ratePointCard__top">
-                      <span className="ratePointCard__label">レートポイント</span>
+                      <span className="ratePointCard__label">選択中チーム</span>
                       <strong className="ratePointCard__value">{scrimMeta.ratePoint}</strong>
                     </div>
-                    <p className="ratePointCard__sub">{scrimMeta.rateUpdatedAt}</p>
+                    <p className="ratePointCard__sub">
+                      {scrimMeta.teamName} / {scrimMeta.rateUpdatedAt}
+                    </p>
                   </div>
                 </section>
               </div>
             </article>
 
             <article className="card">
-              <div className="sectionHeader sectionHeader--compact">
-                <p className="sectionHeader__sub">APEX RANKED</p>
-                <h3>ランクシーン</h3>
-              </div>
+              <CardTitle eyebrow="APEX RANKED" title="ランクシーン" href="/apex/rank-map" />
 
               <div className="rankSceneCard">
                 <section className="competitiveBlock">
                   <div className="competitiveBlockHeader">
                     <p className="competitiveBlockLabel">RANK MAP</p>
-                    <h4 className="competitiveBlockTitle">ランクマップローテーション</h4>
+                    <Link href="/apex/rank-map" className="sectionTitleLink sectionTitleLink--small">
+                      <h4 className="competitiveBlockTitle">本日のランクマップ</h4>
+                      <span>詳細を見る</span>
+                    </Link>
                   </div>
 
                   {loadingState.rankMap ? (
@@ -571,10 +556,7 @@ export default function HomePage() {
                       </div>
                     </article>
                   ) : (
-                    <div className="loadingPanel">
-                      <strong>取得失敗</strong>
-                      <p>{rankMapError?.message ?? 'GameFavo からランクマップを取得できませんでした。'}</p>
-                    </div>
+                    <div className="loadingPanel">現在のランクマップを取得できませんでした。</div>
                   )}
                 </section>
 
@@ -583,16 +565,17 @@ export default function HomePage() {
                 <section className="competitiveBlock">
                   <div className="competitiveBlockHeader">
                     <p className="competitiveBlockLabel">LEGEND PICK RATE</p>
-                    <h4 className="competitiveBlockTitle">高Pick率レジェンド</h4>
+                    <Link href="/apex/legends-pick-rate" className="sectionTitleLink sectionTitleLink--small">
+                      <h4 className="competitiveBlockTitle">高Pick率レジェンド</h4>
+                      <span>詳細を見る</span>
+                    </Link>
                   </div>
 
                   <div className="rankLegendGrid">
                     {visibleLegendMeta.map((legend, index) => (
                       <article key={legend.name} className="legendMetaCard">
                         <div className="legendMetaCard__top">
-                          <span className="legendMetaRank">
-                            TOP {index + 1}
-                          </span>
+                          <span className="legendMetaRank">TOP {index + 1}</span>
                           <strong>{legend.name}</strong>
                         </div>
 
@@ -630,10 +613,7 @@ export default function HomePage() {
 
         <section className="section">
           <article className="newsCard">
-            <div className="sectionHeader sectionHeader--compact">
-              <p className="sectionHeader__sub">NEWS</p>
-              <h3>Apex の最新情報</h3>
-            </div>
+            <CardTitle eyebrow="NEWS" title="Apex の最新情報" href="/apex/news" />
 
             <ul className="newsList">
               {apexNews.map((item) => (
@@ -655,16 +635,10 @@ export default function HomePage() {
         </section>
 
         <section className="section">
-          <div className="sectionHeader">
-            <p className="sectionHeader__sub">VALORANT</p>
-            <h2>VALORANT の情報</h2>
-          </div>
+          <SectionTitle eyebrow="VALORANT" title="VALORANT の情報" href="/valorant" />
 
           <article className="card">
-            <div className="sectionHeader sectionHeader--compact">
-              <p className="sectionHeader__sub">MAP ROTATION</p>
-              <h3>現行シーズンのマップ</h3>
-            </div>
+            <CardTitle eyebrow="MAP ROTATION" title="現シーズンのマップローテーション" href="/valorant/maps" />
 
             <div className="valorantMapGrid">
               {currentValorantMaps.map((map) => (
@@ -694,10 +668,7 @@ export default function HomePage() {
 
         <section className="section">
           <article className="newsCard">
-            <div className="sectionHeader sectionHeader--compact">
-              <p className="sectionHeader__sub">NEWS</p>
-              <h3>VALORANT の最新情報</h3>
-            </div>
+            <CardTitle eyebrow="NEWS" title="VALORANT の最新情報" href="/valorant/news" />
 
             <ul className="newsList">
               {valorantNews.map((item) => (
@@ -717,9 +688,44 @@ export default function HomePage() {
             </ul>
           </article>
         </section>
+
+        <section className="section">
+          <article className="card aiCoachHomeCard">
+            <CardTitle eyebrow="AI COACH" title="ファイトシーンを、AIが競技目線で分析。" href="/ai-coach" />
+            <div className="aiCoachHomeGrid">
+              {[
+                'ファイト開始前の判断',
+                'ポジション取り',
+                '射線管理',
+                'カバータイミング',
+                'ダウン原因',
+                'その瞬間に言うべきIGLコール',
+                '次の試合で使える改善チェックリスト',
+              ].map((item) => (
+                <span key={item}>{item}</span>
+              ))}
+            </div>
+            <div className="heroActionRow">
+              <Link href="/ai-coach" className="button button--primary">
+                AI Coachを見る
+              </Link>
+              <Link href="/pricing" className="button button--ghost">
+                料金プラン
+              </Link>
+              <Link href="/contact" className="button button--ghost">
+                問い合わせ
+              </Link>
+            </div>
+          </article>
+        </section>
       </main>
 
-      <footer className="footer">Apex Dashboard</footer>
+      <footer className="footer">
+        <Link href="/contact">問い合わせ</Link>
+        <span> / </span>
+        <Link href="/pricing">料金プラン</Link>
+        <span> / Apex Dashboard</span>
+      </footer>
     </div>
   )
 }

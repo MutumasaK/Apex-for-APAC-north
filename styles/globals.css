@@ -102,6 +102,16 @@ img {
   backdrop-filter: blur(8px);
 }
 
+.statusCard--link {
+  display: block;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.statusCard--link:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.14);
+}
+
 .statusCard__label {
   display: block;
   margin-bottom: 8px;
@@ -155,6 +165,34 @@ img {
 .sectionHeader h2 {
   font-size: 38px;
   letter-spacing: 0.03em;
+}
+
+.sectionTitleLink {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sectionTitleLink span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  background: #f2dfba;
+  color: #8b5e12;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.sectionTitleLink--small span {
+  min-height: 28px;
+  padding: 5px 10px;
 }
 
 .sectionHeader--compact h3 {
@@ -269,20 +307,34 @@ img {
   min-width: 0;
 }
 
-.proLeagueTeamIcon {
+.teamLogo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 48px;
   height: 48px;
-  object-fit: contain;
   flex-shrink: 0;
-  border-radius: 14px;
-  background: #fff;
-  border: 1px solid rgba(168, 132, 61, 0.16);
+  border-radius: 12px;
+  background: #efe4d2;
+  border: 1px solid rgba(168, 132, 61, 0.34);
   padding: 6px;
+  overflow: hidden;
 }
 
-.proLeagueTeamIcon--dark {
-  background: linear-gradient(135deg, #2a2f42, #171c2c);
-  border-color: rgba(28, 35, 48, 0.2);
+.teamLogo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.teamLogo--fallback {
+  background: linear-gradient(135deg, #f2dfba, #fff8ea);
+  color: #5f4717;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1;
+  text-align: center;
 }
 
 .proLeagueTeamName {
@@ -601,6 +653,32 @@ img {
   object-position: center;
 }
 
+.valorantMapOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 18px;
+  background: linear-gradient(180deg, transparent 28%, rgba(0, 0, 0, 0.68));
+  color: #fff;
+  pointer-events: none;
+}
+
+.valorantMapOverlay span {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.valorantMapOverlay strong {
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 28px;
+  line-height: 1.2;
+}
+
 .valorantMapImage--archive {
   object-fit: cover;
   object-position: center;
@@ -699,6 +777,29 @@ img {
   text-align: center;
   color: #7c6a4f;
   border-top: 1px solid #e9dfd0;
+}
+
+.aiCoachHomeCard {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(216, 179, 106, 0.2), transparent 34%),
+    #fff;
+}
+
+.aiCoachHomeGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.aiCoachHomeGrid span {
+  display: block;
+  padding: 14px;
+  border-radius: 14px;
+  background: #f8f5ef;
+  color: #1c2330;
+  font-weight: 700;
+  line-height: 1.6;
 }
 
 /* detail page */

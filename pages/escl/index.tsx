@@ -2,10 +2,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import type { GetServerSideProps } from 'next'
-import ProMetaCard from '../../components/ProMetaCard'
 import SeoHead from '../../components/SeoHead'
 import SiteLayout from '../../components/SiteLayout'
-import { getApexProComps } from '../../lib/apex-pro-comps'
 import { buildTeamSlug, computeEsclTeamStatus } from '../../lib/escl-status-core'
 import { DEFAULT_TEAM_NAME } from '../../lib/site'
 
@@ -18,14 +16,14 @@ type SearchItem = {
 
 type EsclPageProps = {
   teamData: Awaited<ReturnType<typeof computeEsclTeamStatus>>
-  proComps: ReturnType<typeof getApexProComps>
 }
 
-export default function EsclPage({ teamData, proComps }: EsclPageProps) {
+export default function EsclPage({ teamData }: EsclPageProps) {
   const router = useRouter()
-  const [query, setQuery] = useState(teamData.selectedTeam.name)
+  const [query, setQuery] = useState(teamData.selectedTeam.name || DEFAULT_TEAM_NAME)
   const [results, setResults] = useState<SearchItem[]>([])
   const [loading, setLoading] = useState(false)
+  const selectedTeamSlug = buildTeamSlug(teamData.selectedTeam)
 
   useEffect(() => {
     const trimmed = query.trim()
@@ -49,8 +47,6 @@ export default function EsclPage({ teamData, proComps }: EsclPageProps) {
 
     return () => window.clearTimeout(timeoutId)
   }, [query])
-
-  const selectedTeamSlug = buildTeamSlug(teamData.selectedTeam)
 
   return (
     <>
@@ -149,10 +145,6 @@ export default function EsclPage({ teamData, proComps }: EsclPageProps) {
                 </div>
               </article>
             </div>
-
-            <div className="cardGrid cardGrid--single">
-              <ProMetaCard data={proComps} compact />
-            </div>
           </section>
         </main>
       </SiteLayout>
@@ -164,7 +156,6 @@ export const getServerSideProps: GetServerSideProps<EsclPageProps> = async () =>
   return {
     props: {
       teamData: await computeEsclTeamStatus({ teamName: DEFAULT_TEAM_NAME }),
-      proComps: getApexProComps({ matchLimit: 2, itemLimit: 3, latestFirst: true }),
     },
   }
 }

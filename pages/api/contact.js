@@ -15,10 +15,7 @@ async function saveToSupabase(record) {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
   if (!url || !serviceRoleKey) {
-    return {
-      stored: false,
-      mode: 'log-only',
-    }
+    return { stored: false, mode: 'log-only' }
   }
 
   const response = await fetch(`${url}/rest/v1/${SUPABASE_CONTACT_TABLE}`, {
@@ -36,10 +33,7 @@ async function saveToSupabase(record) {
     throw new Error(`Supabase request failed: ${response.status}`)
   }
 
-  return {
-    stored: true,
-    mode: 'supabase',
-  }
+  return { stored: true, mode: 'supabase' }
 }
 
 export default async function handler(req, res) {

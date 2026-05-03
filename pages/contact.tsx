@@ -41,12 +41,9 @@ export default function ContactPage() {
     try {
       const response = await fetch('/api/contact', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       })
-
       const json = await response.json()
 
       if (!response.ok || !json?.ok) {
@@ -59,13 +56,7 @@ export default function ContactPage() {
           ? '問い合わせを受け付けました。確認後にご連絡します。'
           : '問い合わせを受け付けました。保存先が未設定のため、サーバーログに記録しています。'
       )
-      setForm((prev) => ({
-        ...prev,
-        name: '',
-        contact: '',
-        content: '',
-        website: '',
-      }))
+      setForm((prev) => ({ ...prev, name: '', contact: '', content: '', website: '' }))
     } catch (error) {
       setStatus('error')
       setMessage(error instanceof Error ? error.message : '送信に失敗しました。')
