@@ -90,8 +90,8 @@ img {
   margin-top: 28px;
 }
 
-.hero__statusRow--two {
-  grid-template-columns: repeat(2, 1fr);
+.hero__statusRow--three {
+  grid-template-columns: repeat(3, 1fr);
 }
 
 .statusCard {
@@ -130,6 +130,441 @@ img {
 
 .ok {
   color: #86e4a0;
+}
+
+/* =====================
+   ESCL Team Section
+===================== */
+
+.esclTeamSection {
+  display: grid;
+  gap: 14px;
+}
+
+.esclTeamCard {
+  padding: 16px;
+  border-radius: 14px;
+  background: #f8f5ef;
+}
+
+.esclCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.esclCardHeader strong {
+  font-size: 16px;
+  color: #1c2330;
+}
+
+.esclStatus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.esclStatus--participating {
+  background: #86e4a0;
+  color: #0a5c2e;
+}
+
+.esclStatus--not_participating {
+  background: #f2dfba;
+  color: #8b5e12;
+}
+
+.esclStatus--pending {
+  background: #e5e5e5;
+  color: #666;
+}
+
+.esclCardMeta {
+  color: #8b6f3e;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.esclCardNote {
+  color: #5f6772;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.teamRateCard {
+  padding: 18px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #fff8ea, #f8f5ef);
+  border: 1px solid rgba(168, 132, 61, 0.2);
+}
+
+.teamRateLabel {
+  display: block;
+  color: #8b6f3e;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+
+.teamRateValue {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 42px;
+  font-weight: 700;
+  color: #5f4717;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.teamRateMeta {
+  margin: 0;
+  color: #a8843d;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* =====================
+   Legend Tier Tabs
+===================== */
+
+.legendPickRateHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.legendTierTabs {
+  display: flex;
+  gap: 8px;
+  align-self: flex-end;
+}
+
+.legendTabBtn {
+  padding: 8px 14px;
+  border: 1px solid #e3d6c0;
+  border-radius: 9999px;
+  background: #fff;
+  color: #8b5e12;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.legendTabBtn:hover {
+  background: #f8f5ef;
+}
+
+.legendTabBtn.active {
+  background: #f2dfba;
+  border-color: #f2dfba;
+  color: #5f4717;
+}
+
+.legendGridCompact {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.legendCompactCard {
+  padding: 12px;
+  border-radius: 12px;
+  background: #f8f5ef;
+  text-align: center;
+}
+
+.legendIconWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 60px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  background: #efe4d2;
+}
+
+.legendIcon {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.legendName {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1c2330;
+}
+
+.legendPickLabel {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #d9b668;
+}
+
+/* =====================
+   Pro League Meta Cards
+===================== */
+
+.proLeagueMetaSection {
+  display: grid;
+  gap: 14px;
+}
+
+.proLeagueMetaCard {
+  padding: 16px;
+  border-radius: 14px;
+  background: #f8f5ef;
+  border: 1px solid rgba(168, 132, 61, 0.08);
+}
+
+.metaCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.metaRank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 28px;
+  border-radius: 9999px;
+  background: #f2dfba;
+  color: #8b5e12;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.metaPickRate {
+  font-size: 14px;
+  font-weight: 700;
+  color: #5f4717;
+}
+
+.metaLegendsRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  margin-bottom: 12px;
+  min-height: 50px;
+}
+
+.metaLegendIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: #efe4d2;
+  object-fit: contain;
+  padding: 4px;
+}
+
+.metaLegendText {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #efe4d2;
+  font-size: 12px;
+  font-weight: 700;
+  color: #5f4717;
+}
+
+.metaCardFooter {
+  display: grid;
+  gap: 6px;
+}
+
+.metaRegion {
+  margin: 0;
+  font-size: 12px;
+  color: #8b6f3e;
+  font-weight: 700;
+}
+
+.metaComment {
+  margin: 0;
+  font-size: 13px;
+  color: #5f6772;
+  line-height: 1.5;
+}
+
+.dataUpdatedAt {
+  margin: 12px 0 0;
+  text-align: center;
+  color: #a8843d;
+  font-size: 12px;
+}
+
+/* =====================
+   Apex Guide Maps
+===================== */
+
+.apexGuideGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.apexGuideCard {
+  overflow: hidden;
+  border-radius: 18px;
+  background: #f8f5ef;
+  border: 1px solid rgba(28, 35, 48, 0.06);
+}
+
+.apexGuideImageWrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px 14px 0 0;
+  background: #ece7df;
+}
+
+.apexGuideImage {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  object-position: center;
+}
+
+.apexGuideOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 16px;
+  background: linear-gradient(180deg, transparent 20%, rgba(0, 0, 0, 0.6));
+  color: #fff;
+  pointer-events: none;
+}
+
+.apexGuideOverlay strong {
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.apexGuideMeta {
+  padding: 16px;
+}
+
+.guideDescription {
+  margin: 8px 0 12px;
+  font-size: 13px;
+  color: #6a7380;
+  line-height: 1.6;
+}
+
+/* =====================
+   AI Coach Card
+===================== */
+
+.aiCoachCard {
+  background: radial-gradient(circle at 12% 0%, rgba(216, 179, 106, 0.15), transparent 34%), #fff;
+}
+
+.aiCoachContent {
+  display: grid;
+  gap: 24px;
+}
+
+.aiCoachDescription {
+  margin: 12px 0 0;
+  font-size: 15px;
+  line-height: 1.9;
+  color: #5f6772;
+}
+
+.aiCoachActions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* =====================
+   CTA Card
+===================== */
+
+.ctaCard {
+  background: linear-gradient(135deg, rgba(242, 223, 186, 0.15), transparent);
+  text-align: center;
+}
+
+.ctaCard h2 {
+  font-size: 32px;
+  margin: 0 0 12px;
+}
+
+.ctaCard p {
+  margin: 0 0 20px;
+  font-size: 15px;
+  line-height: 1.8;
+  color: #5f6772;
+}
+
+/* =====================
+   Buttons
+===================== */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 10px 18px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: 0.2s ease;
+  text-decoration: none;
+}
+
+.button--primary {
+  background: #f2dfba;
+  color: #8b5e12;
+}
+
+.button--primary:hover {
+  background: #ebd09d;
+  transform: translateY(-2px);
+}
+
+.button--secondary {
+  background: transparent;
+  color: #8b5e12;
+  border: 1px solid #f2dfba;
+}
+
+.button--secondary:hover {
+  background: #f8f5ef;
+}
+
+.button--ghost {
+  background: transparent;
+  color: #5f6772;
+  border: 1px solid #e3d6c0;
+}
+
+.button--ghost:hover {
+  background: #f8f5ef;
 }
 
 .main {
@@ -1181,9 +1616,9 @@ img {
 
 @media (max-width: 900px) {
   .hero__statusRow--two,
+  .hero__statusRow--three,
   .gridTwo,
-  .valorantMapGrid,
-  .valorantArchiveGrid,
+  .apexGuideGrid,
   .detailTwoCol,
   .agentRankList--triple {
     grid-template-columns: 1fr;
@@ -1193,13 +1628,16 @@ img {
     font-size: 28px;
   }
 
-  .apexMapImage,
-  .valorantMapImage {
+  .apexMapImage {
     height: 210px;
   }
 
   .detailOverviewImage {
     height: 280px;
+  }
+
+  .legendGridCompact {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -1226,8 +1664,25 @@ img {
     margin-bottom: 56px;
   }
 
-  .legendMetaGrid {
+  .legendGridCompact {
     grid-template-columns: 1fr;
+  }
+
+  .legendPickRateHeader {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .legendTierTabs {
+    align-self: flex-start;
+  }
+
+  .apexGuideGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .aiCoachActions {
+    flex-direction: column;
   }
 
   .ratePointCard__top,
@@ -1263,8 +1718,7 @@ img {
     text-align: left;
   }
 
-  .apexMapImage,
-  .valorantMapImage {
+  .apexMapImage {
     height: 190px;
   }
 
@@ -1278,6 +1732,18 @@ img {
 
   .detailImageModal__dialog {
     padding: 14px;
+  }
+
+  .metaLegendsRow {
+    flex-wrap: wrap;
+  }
+
+  .aiCoachActions .button {
+    width: 100%;
+  }
+
+  .button {
+    justify-content: center;
   }
 }/* =========================
    Apex 右カード 視認性改善

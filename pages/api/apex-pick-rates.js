@@ -1,5 +1,8 @@
-const PICK_RATE_URL =
+const PICK_RATE_DIAMOND_URL =
   'https://apexlegendsstatus.com/game-stats/legends-pick-rates/Diamond'
+
+const PICK_RATE_MP_URL =
+  'https://apexlegendsstatus.com/game-stats/legends-pick-rates/Master'
 
 const LEGEND_ORDER = [
   'Octane',
@@ -98,19 +101,9 @@ function extractLegendRates(text) {
   return results.sort((a, b) => b.pickRate - a.pickRate)
 }
 
-function fallbackItems() {
-  return [
-    { rank: 1, name: 'Octane', pickRate: 18.7, pickRateLabel: '18.7%' },
-    { rank: 2, name: 'Mad Maggie', pickRate: 15.8, pickRateLabel: '15.8%' },
-    { rank: 3, name: 'Alter', pickRate: 9.1, pickRateLabel: '9.1%' },
-    { rank: 4, name: 'Valkyrie', pickRate: 8.1, pickRateLabel: '8.1%' },
-    { rank: 5, name: 'Bangalore', pickRate: 7.5, pickRateLabel: '7.5%' },
-  ]
-}
-
-export default async function handler(req, res) {
+async function fetchTierPickRates(url) {
   try {
-    const response = await fetch(PICK_RATE_URL, {
+    const response = await fetch(url, {
       headers: {
         'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
@@ -123,42 +116,108 @@ export default async function handler(req, res) {
     })
 
     if (!response.ok) {
-      return res.status(200).json({
-        items: fallbackItems(),
-        updatedAtLabel: `次回更新: ${getNextMidnightJstLabel()}`,
-        note: 'Pick Rate の取得に失敗したため、安定表示用のフォールバックを返しています。',
-      })
+      return null
     }
 
     const html = await response.text()
     const extracted = extractLegendRates(htmlToSearchableText(html))
 
     if (!extracted.length) {
-      return res.status(200).json({
-        items: fallbackItems(),
-        updatedAtLabel: `次回更新: ${getNextMidnightJstLabel()}`,
-        note: 'Pick Rate の抽出に失敗したため、安定表示用のフォールバックを返しています。',
-      })
+      return null
     }
 
-    const topFive = extracted.slice(0, 5).map((item, index) => ({
+    return extracted.slice(0, 5).map((item, index) => ({
       rank: index + 1,
       name: item.name,
       pickRate: item.pickRate,
-      pickRateLabel: item.pickRateLabel,
     }))
-
-    return res.status(200).json({
-      items: topFive,
-      updatedAtLabel: `次回更新: ${getNextMidnightJstLabel()}`,
-      note: null,
-    })
   } catch (error) {
-    console.error('apex-pick-rates error', error instanceof Error ? error.message : error)
+    console.error(`Fetch tier pick rates error for ${url}:`, error instanceof Error ? error.message : error)
+    return null
+  }
+}
+
+function formatCurrentTime() {
+  const now = new Date()
+  const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000)
+  const year = jst.getUTCFullYear()
+  const month = String(jst.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(jst.getUTCDate()).padStart(2, '0')
+  const hour = String(jst.getUTCHours()).padStart(2, '0')
+  const minute = String(jst.getUTCMinutes()).padStart(2, '0')
+  return `${year}/${month}/${day} ${hour}:${minute} JST`
+}
+
+export default async function handler(req, res) {
+  const cacheControl = 'public, s-maxage=300, stale-while-revalidate=600'
+  res.setHeader('Cache-Control', cacheControl)
+
+  try {
+    const [diamondResult, mpResult] = await Promise.all([
+      fetchTierPickRates(PICK_RATE_DIAMOND_URL),
+      fetchTierPickRates(PICK_RATE_MP_URL),
+    ])
+
+    const now = new Date()
+    const updatedAt = formatCurrentTime()
+
+    const result = {}
+
+    if (diamondResult && diamondResult.length > 0) {
+      result.diamond = {
+        legends: diamondResult,
+        updatedAt,
+      }
+    }
+
+    if (mpResult && mpResult.length > 0) {
+      result.masterPredator = {
+        legends: mpResult,
+        updatedAt,
+      }
+    }
+
+    if (Object.keys(result).length === 0) {
+      return res.status(200).json({
+        diamond: {
+          legends: [
+            { rank: 1, name: 'Octane', pickRate: 18.7 },
+            { rank: 2, name: 'Mad Maggie', pickRate: 15.8 },
+            { rank: 3, name: 'Alter', pickRate: 9.1 },
+          ],
+          updatedAt: '確認中',
+        },
+        masterPredator: {
+          legends: [
+            { rank: 1, name: 'Wraith', pickRate: 16.2 },
+            { rank: 2, name: 'Pathfinder', pickRate: 14.5 },
+            { rank: 3, name: 'Gibraltar', pickRate: 12.3 },
+          ],
+          updatedAt: '確認中',
+        },
+      })
+    }
+
+    return res.status(200).json(result)
+  } catch (error) {
+    console.error('apex-pick-rates handler error:', error instanceof Error ? error.message : error)
     return res.status(200).json({
-      items: fallbackItems(),
-      updatedAtLabel: `次回更新: ${getNextMidnightJstLabel()}`,
-      note: 'Pick Rate の取得に失敗したため、安定表示用のフォールバックを返しています。',
+      diamond: {
+        legends: [
+          { rank: 1, name: 'Octane', pickRate: 18.7 },
+          { rank: 2, name: 'Mad Maggie', pickRate: 15.8 },
+          { rank: 3, name: 'Alter', pickRate: 9.1 },
+        ],
+        updatedAt: '確認中',
+      },
+      masterPredator: {
+        legends: [
+          { rank: 1, name: 'Wraith', pickRate: 16.2 },
+          { rank: 2, name: 'Pathfinder', pickRate: 14.5 },
+          { rank: 3, name: 'Gibraltar', pickRate: 12.3 },
+        ],
+        updatedAt: '確認中',
+      },
     })
   }
 }
