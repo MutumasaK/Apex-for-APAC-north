@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import type { GetServerSideProps } from 'next'
 import SeoHead from '../../components/SeoHead'
 import SiteLayout from '../../components/SiteLayout'
-import { buildTeamSlug, computeEsclTeamStatus } from '../../lib/escl-status-core'
+import { computeEsclTeamStatus } from '../../lib/escl-status-core'
 import { DEFAULT_TEAM_NAME } from '../../lib/site'
 
 type SearchItem = {
@@ -20,10 +20,10 @@ type EsclPageProps = {
 
 export default function EsclPage({ teamData }: EsclPageProps) {
   const router = useRouter()
-  const [query, setQuery] = useState(teamData.selectedTeam.name || DEFAULT_TEAM_NAME)
+  const [query, setQuery] = useState(teamData.selectedTeam?.teamName || DEFAULT_TEAM_NAME)
   const [results, setResults] = useState<SearchItem[]>([])
   const [loading, setLoading] = useState(false)
-  const selectedTeamSlug = buildTeamSlug(teamData.selectedTeam)
+  const selectedTeamSlug = teamData.selectedTeam?.teamSlug || ''
 
   useEffect(() => {
     const trimmed = query.trim()
@@ -35,7 +35,7 @@ export default function EsclPage({ teamData }: EsclPageProps) {
     const timeoutId = window.setTimeout(async () => {
       setLoading(true)
       try {
-        const response = await fetch(`/api/escl/teams?query=${encodeURIComponent(trimmed)}`)
+        const response = await fetch(`/api/escl/teams?query=${encodeURIComponent(trimmed)}`, { cache: 'no-store' })
         const json = await response.json()
         setResults(Array.isArray(json?.items) ? json.items : [])
       } catch {
@@ -122,26 +122,28 @@ export default function EsclPage({ teamData }: EsclPageProps) {
                 <div className="teamHeroCard">
                   <div>
                     <p className="teamHeroCard__label">チーム名</p>
-                    <strong>{teamData.selectedTeam.name}</strong>
+                    <strong>{teamData.selectedTeam?.teamName || DEFAULT_TEAM_NAME}</strong>
                   </div>
                   <div>
                     <p className="teamHeroCard__label">RATE</p>
-                    <strong>{teamData.selectedTeam.rate}</strong>
+                    <strong>{teamData.selectedScrim.rate}</strong>
                   </div>
                   <div>
-                    <p className="teamHeroCard__label">参加状況</p>
-                    <strong>{teamData.todayStatus.statusLabel}</strong>
+                    <p className="teamHeroCard__label">エントリー/参加</p>
+                    <strong>{teamData.selectedScrim.entryStatusLabel}</strong>
                   </div>
                 </div>
 
                 <div className="linkList">
-                  {teamData.recentScrims.map((item) => (
-                    <div key={item.id} className="listLink listLink--static">
-                      <strong>{item.title}</strong>
-                      <span>{item.dateLabel}</span>
-                      <span>{item.note}</span>
-                    </div>
-                  ))}
+                  <div className="listLink listLink--static">
+                    <strong>{teamData.selectedScrim.title}</strong>
+                    <span>{teamData.selectedScrim.dateLabel || teamData.updatedAtLabel}</span>
+                    <span>エントリー/参加: {teamData.selectedScrim.entryStatusLabel}</span>
+                    <span>チェックイン: {teamData.selectedScrim.checkinStatusLabel}</span>
+                    <a href={teamData.selectedScrim.detailUrl} target="_blank" rel="noreferrer" className="inlineLink">
+                      詳細を見る
+                    </a>
+                  </div>
                 </div>
               </article>
             </div>

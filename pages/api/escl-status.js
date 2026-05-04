@@ -11,24 +11,31 @@ import { DEFAULT_TEAM_NAME } from '../../lib/site'
 
 function pendingPayload(now = new Date()) {
   const updatedAtLabel = `最終確認: ${formatJst(now)}`
+  const selectedScrim = {
+    id: 'a2fed046-6427-432b-8852-dcc7b0981817',
+    title: '本日の ESCL スクリム情報',
+    detailUrl: 'https://fightnt.escl.co.jp/scrims/a2fed046-6427-432b-8852-dcc7b0981817',
+    dateLabel: '',
+    entryStatus: 'unknown',
+    entryStatusLabel: 'データ確認中',
+    checkinStatus: 'unknown',
+    checkinStatusLabel: 'データ確認中',
+    statusLabel: 'データ確認中',
+    rate: 0,
+    note: '本日のスクリム情報を確認しています。',
+  }
 
   return {
     date: null,
-    items: [
-      {
-        id: 'scrim-pending',
-        title: '本日の ESCL スクリム情報',
-        dateLabel: '',
-        statusLabel: '確認中',
-        note: '',
-      },
-    ],
+    selectedScrim,
+    scrims: [],
+    items: [selectedScrim],
     meta: {
       teamName: DEFAULT_TEAM_NAME,
       ratePoint: 0,
       rateUpdatedAt: updatedAtLabel,
     },
-    status: '確認中',
+    status: 'データ確認中',
     group: null,
     scrimId: null,
     scrimName: null,
@@ -40,28 +47,31 @@ function pendingPayload(now = new Date()) {
 function errorPayload(error) {
   const now = new Date()
   const updatedAtLabel = `最終確認: ${formatJst(now)}`
-  const message =
-    error instanceof Error
-      ? `ESCL ステータスの取得に失敗しました: ${error.message}`
-      : 'ESCL ステータスの取得に失敗しました。'
+  const selectedScrim = {
+    id: 'a2fed046-6427-432b-8852-dcc7b0981817',
+    title: '本日の ESCL スクリム情報',
+    detailUrl: 'https://fightnt.escl.co.jp/scrims/a2fed046-6427-432b-8852-dcc7b0981817',
+    dateLabel: '',
+    entryStatus: 'unknown',
+    entryStatusLabel: 'データ確認中',
+    checkinStatus: 'unknown',
+    checkinStatusLabel: 'データ確認中',
+    statusLabel: 'データ確認中',
+    rate: 0,
+    note: '本日のスクリム情報を確認しています。',
+  }
 
   return {
     date: null,
-    items: [
-      {
-        id: 'scrim-error',
-        title: '本日の ESCL スクリム情報',
-        dateLabel: '',
-        statusLabel: '確認中',
-        note: message,
-      },
-    ],
+    selectedScrim,
+    scrims: [],
+    items: [selectedScrim],
     meta: {
       teamName: DEFAULT_TEAM_NAME,
       ratePoint: 0,
       rateUpdatedAt: updatedAtLabel,
     },
-    status: '確認中',
+    status: 'データ確認中',
     group: null,
     scrimId: null,
     scrimName: null,
@@ -71,6 +81,8 @@ function errorPayload(error) {
 }
 
 export default async function handler(req, res) {
+  res.setHeader('Cache-Control', 'no-store, max-age=0')
+
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'method_not_allowed' })
   }
@@ -91,7 +103,7 @@ export default async function handler(req, res) {
 
     if (isRedisEnabled()) {
       const stored = await readEsclStatus(now)
-      if (stored) {
+      if (stored?.selectedScrim) {
         return res.status(200).json(stored)
       }
     }

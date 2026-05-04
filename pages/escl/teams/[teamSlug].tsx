@@ -2,20 +2,22 @@ import Link from 'next/link'
 import type { GetServerSideProps } from 'next'
 import SeoHead from '../../../components/SeoHead'
 import SiteLayout from '../../../components/SiteLayout'
-import { buildTeamSlug, computeEsclTeamStatus, searchEsclTeams } from '../../../lib/escl-status-core'
+import { computeEsclTeamStatus, searchEsclTeams } from '../../../lib/escl-status-core'
 
 type EsclTeamPageProps = {
   teamData: Awaited<ReturnType<typeof computeEsclTeamStatus>>
 }
 
 export default function EsclTeamPage({ teamData }: EsclTeamPageProps) {
-  const teamSlug = buildTeamSlug(teamData.selectedTeam)
+  const teamSlug = teamData.selectedTeam?.teamSlug || ''
+  const teamName = teamData.selectedTeam?.teamName || '選択中チーム'
+  const teamId = teamData.selectedTeam?.teamId ? String(teamData.selectedTeam.teamId) : ''
 
   return (
     <>
       <SeoHead
-        title={`${teamData.selectedTeam.name} | ESCLチーム情報 | Apex Dashboard`}
-        description={`${teamData.selectedTeam.name} のESCL参加状況、RATE、直近スクリム結果を確認できます。`}
+        title={`${teamName} | ESCLチーム情報 | Apex Dashboard`}
+        description={`${teamName} のESCL参加状況、RATE、直近スクリム結果を確認できます。`}
         path={teamSlug ? `/escl/teams/${teamSlug}` : '/escl'}
       />
 
@@ -23,7 +25,7 @@ export default function EsclTeamPage({ teamData }: EsclTeamPageProps) {
         <main className="pageMain">
           <section className="pageHero pageHero--light">
             <p className="eyebrow">ESCL TEAM DETAIL</p>
-            <h1>{teamData.selectedTeam.name} のESCLチーム情報</h1>
+            <h1>{teamName} のESCLチーム情報</h1>
             <p className="pageHero__lead">
               選択中チームの参加状況、RATE、直近スクリム結果を確認できます。
             </p>
@@ -39,20 +41,26 @@ export default function EsclTeamPage({ teamData }: EsclTeamPageProps) {
                 <Link href="/escl" className="inlineLink">
                   チーム検索へ戻る
                 </Link>
+                <Link
+                  href={`/?teamId=${encodeURIComponent(teamId)}&teamSlug=${encodeURIComponent(teamSlug)}`}
+                  className="inlineLink"
+                >
+                  Homeで見る
+                </Link>
               </div>
 
               <div className="teamHeroCard">
-                <div>
-                  <p className="teamHeroCard__label">チーム名</p>
-                  <strong>{teamData.selectedTeam.name}</strong>
-                </div>
-                <div>
-                  <p className="teamHeroCard__label">RATE</p>
-                  <strong>{teamData.selectedTeam.rate}</strong>
-                </div>
+                  <div>
+                    <p className="teamHeroCard__label">チーム名</p>
+                    <strong>{teamName}</strong>
+                  </div>
+                  <div>
+                    <p className="teamHeroCard__label">RATE</p>
+                    <strong>{teamData.selectedScrim.rate}</strong>
+                  </div>
                 <div>
                   <p className="teamHeroCard__label">teamId</p>
-                  <strong>{teamData.selectedTeam.teamId}</strong>
+                  <strong>{teamId || '-'}</strong>
                 </div>
               </div>
             </div>
@@ -64,14 +72,18 @@ export default function EsclTeamPage({ teamData }: EsclTeamPageProps) {
                 <div className="cardHeader">
                   <div>
                     <p className="sectionHeader__sub">TODAY STATUS</p>
-                    <h2>本日の参加状況</h2>
+                    <h2>本日のESCL状況</h2>
                   </div>
                 </div>
 
                 <div className="detailSummaryCard">
-                  <strong>{teamData.todayStatus.statusLabel}</strong>
+                  <strong>{teamData.selectedScrim.entryStatusLabel}</strong>
+                  <p>チェックイン: {teamData.selectedScrim.checkinStatusLabel}</p>
                   <p>{teamData.todayStatus.note}</p>
                   <span>{teamData.todayStatus.dateLabel || teamData.updatedAtLabel}</span>
+                  <a href={teamData.selectedScrim.detailUrl} target="_blank" rel="noreferrer" className="inlineLink">
+                    詳細を見る
+                  </a>
                 </div>
               </article>
 
@@ -88,9 +100,8 @@ export default function EsclTeamPage({ teamData }: EsclTeamPageProps) {
                     <div key={item.id} className="listLink listLink--static">
                       <strong>{item.title}</strong>
                       <span>{item.dateLabel}</span>
-                      <span>
-                        {item.statusLabel} / {item.note}
-                      </span>
+                      <span>エントリー/参加: {item.entryStatusLabel}</span>
+                      <span>チェックイン: {item.checkinStatusLabel}</span>
                     </div>
                   ))}
                 </div>
@@ -111,7 +122,7 @@ export default function EsclTeamPage({ teamData }: EsclTeamPageProps) {
                 チーム掲載、ESCL情報の修正依頼、スポンサーや運営関連の相談は問い合わせフォームから受け付けています。
               </p>
               <Link
-                href={`/contact?team=${encodeURIComponent(teamData.selectedTeam.name)}`}
+                href={`/contact?team=${encodeURIComponent(teamName)}`}
                 className="button button--primary"
               >
                 このチームについて問い合わせる
@@ -128,7 +139,7 @@ export const getServerSideProps: GetServerSideProps<EsclTeamPageProps> = async (
   const teamSlug = typeof context.params?.teamSlug === 'string' ? context.params.teamSlug : ''
   const teamData = await computeEsclTeamStatus({ teamSlug })
 
-  if (!teamData.selectedTeam.teamId) {
+  if (!teamData.selectedTeam?.teamId) {
     const fallback = await searchEsclTeams('')
     return {
       redirect: {

@@ -1,8 +1,11 @@
+import * as cheerio from 'cheerio'
+import { resolveLegendIcon } from '../../lib/legend-icons'
+
 const PICK_RATE_DIAMOND_URL =
   'https://apexlegendsstatus.com/game-stats/legends-pick-rates/Diamond'
 
 const PICK_RATE_MP_URL =
-  'https://apexlegendsstatus.com/game-stats/legends-pick-rates/Master'
+  'https://apexlegendsstatus.com/game-stats/legends-pick-rates/Masterpred'
 
 const LEGEND_ORDER = [
   'Octane',
@@ -34,22 +37,6 @@ const LEGEND_ORDER = [
   'Bloodhound',
 ]
 
-function getNextMidnightJstLabel(date = new Date()) {
-  const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000)
-  const next = new Date(jst)
-  next.setUTCHours(15, 0, 0, 0)
-
-  if (jst.getTime() >= next.getTime()) {
-    next.setUTCDate(next.getUTCDate() + 1)
-  }
-
-  const year = next.getUTCFullYear()
-  const month = String(next.getUTCMonth() + 1).padStart(2, '0')
-  const day = String(next.getUTCDate()).padStart(2, '0')
-
-  return `${year}/${month}/${day} 00:00 JST`
-}
-
 function decodeHtmlEntities(text) {
   return text
     .replace(/&amp;/g, '&')
@@ -59,7 +46,6 @@ function decodeHtmlEntities(text) {
     .replace(/&#39;/g, "'")
     .replace(/&nbsp;/g, ' ')
 }
-
 function escapeRegExp(text) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
@@ -79,7 +65,13 @@ function htmlToSearchableText(html) {
     .trim()
 }
 
-function extractLegendRates(text) {
+function getLegendImage(legend) {
+  return resolveLegendIcon(legend)
+}
+
+function extractLegendRates(html) {
+  const $ = cheerio.load(html)
+  const text = htmlToSearchableText(html)
   const results = []
 
   for (const legend of LEGEND_ORDER) {
@@ -95,6 +87,8 @@ function extractLegendRates(text) {
       name: legend,
       pickRate: rate,
       pickRateLabel: `${rate.toFixed(1)}%`,
+      image: getLegendImage(legend),
+      icon: getLegendImage(legend),
     })
   }
 
@@ -103,6 +97,8 @@ function extractLegendRates(text) {
 
 async function fetchTierPickRates(url) {
   try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
     const response = await fetch(url, {
       headers: {
         'User-Agent':
@@ -113,14 +109,15 @@ async function fetchTierPickRates(url) {
         'Cache-Control': 'no-cache',
         Pragma: 'no-cache',
       },
+      signal: controller.signal,
     })
+    clearTimeout(timeoutId)
 
     if (!response.ok) {
       return null
     }
 
-    const html = await response.text()
-    const extracted = extractLegendRates(htmlToSearchableText(html))
+    const extracted = extractLegendRates(await response.text())
 
     if (!extracted.length) {
       return null
@@ -129,7 +126,11 @@ async function fetchTierPickRates(url) {
     return extracted.slice(0, 5).map((item, index) => ({
       rank: index + 1,
       name: item.name,
-      pickRate: item.pickRate,
+      pickRate: item.pickRateLabel,
+      pickRateValue: item.pickRate,
+      pickRateLabel: item.pickRateLabel,
+      image: item.image,
+      icon: item.icon,
     }))
   } catch (error) {
     console.error(`Fetch tier pick rates error for ${url}:`, error instanceof Error ? error.message : error)
@@ -148,9 +149,46 @@ function formatCurrentTime() {
   return `${year}/${month}/${day} ${hour}:${minute} JST`
 }
 
+function buildFallbackPayload() {
+  const updatedAt = '現在データ確認中'
+  const diamondLegends = [
+    'Mad Maggie',
+    'Alter',
+    'Valkyrie',
+    'Bangalore',
+    'Wraith',
+  ].map((name, index) => ({
+    rank: index + 1,
+    name,
+    pickRate: '-',
+    pickRateValue: 0,
+    pickRateLabel: '-',
+    image: getLegendImage(name),
+    icon: getLegendImage(name),
+  }))
+
+  return {
+    updatedAt,
+    sourceLabel: 'Diamond',
+    legends: diamondLegends,
+    diamond: {
+      legends: diamondLegends,
+      updatedAt,
+      sourceLabel: 'Diamond',
+      message: '現在データ確認中',
+    },
+    masterPredator: {
+      legends: [],
+      updatedAt,
+      sourceLabel: 'Master / Predator',
+      message: 'Master / Predator は現在データ確認中',
+    },
+    message: '現在データ確認中',
+  }
+}
+
 export default async function handler(req, res) {
-  const cacheControl = 'public, s-maxage=300, stale-while-revalidate=600'
-  res.setHeader('Cache-Control', cacheControl)
+  res.setHeader('Cache-Control', 'no-store, max-age=0')
 
   try {
     const [diamondResult, mpResult] = await Promise.all([
@@ -158,66 +196,49 @@ export default async function handler(req, res) {
       fetchTierPickRates(PICK_RATE_MP_URL),
     ])
 
-    const now = new Date()
     const updatedAt = formatCurrentTime()
-
     const result = {}
 
     if (diamondResult && diamondResult.length > 0) {
       result.diamond = {
         legends: diamondResult,
         updatedAt,
+        sourceLabel: 'Diamond',
+        sourceUrl: PICK_RATE_DIAMOND_URL,
       }
+      result.legends = diamondResult
+      result.updatedAt = updatedAt
+      result.sourceLabel = 'Diamond'
+    } else {
+      result.diamond = buildFallbackPayload().diamond
+      result.legends = result.diamond.legends
+      result.updatedAt = updatedAt
+      result.sourceLabel = 'Diamond'
     }
 
     if (mpResult && mpResult.length > 0) {
       result.masterPredator = {
         legends: mpResult,
         updatedAt,
+        sourceLabel: 'Master / Predator',
+        sourceUrl: PICK_RATE_MP_URL,
+      }
+    } else {
+      result.masterPredator = {
+        legends: [],
+        updatedAt,
+        sourceLabel: 'Master / Predator',
+        message: 'Master / Predator は現在データ確認中',
       }
     }
 
     if (Object.keys(result).length === 0) {
-      return res.status(200).json({
-        diamond: {
-          legends: [
-            { rank: 1, name: 'Octane', pickRate: 18.7 },
-            { rank: 2, name: 'Mad Maggie', pickRate: 15.8 },
-            { rank: 3, name: 'Alter', pickRate: 9.1 },
-          ],
-          updatedAt: '確認中',
-        },
-        masterPredator: {
-          legends: [
-            { rank: 1, name: 'Wraith', pickRate: 16.2 },
-            { rank: 2, name: 'Pathfinder', pickRate: 14.5 },
-            { rank: 3, name: 'Gibraltar', pickRate: 12.3 },
-          ],
-          updatedAt: '確認中',
-        },
-      })
+      return res.status(200).json(buildFallbackPayload())
     }
 
     return res.status(200).json(result)
   } catch (error) {
     console.error('apex-pick-rates handler error:', error instanceof Error ? error.message : error)
-    return res.status(200).json({
-      diamond: {
-        legends: [
-          { rank: 1, name: 'Octane', pickRate: 18.7 },
-          { rank: 2, name: 'Mad Maggie', pickRate: 15.8 },
-          { rank: 3, name: 'Alter', pickRate: 9.1 },
-        ],
-        updatedAt: '確認中',
-      },
-      masterPredator: {
-        legends: [
-          { rank: 1, name: 'Wraith', pickRate: 16.2 },
-          { rank: 2, name: 'Pathfinder', pickRate: 14.5 },
-          { rank: 3, name: 'Gibraltar', pickRate: 12.3 },
-        ],
-        updatedAt: '確認中',
-      },
-    })
+    return res.status(200).json(buildFallbackPayload())
   }
 }
