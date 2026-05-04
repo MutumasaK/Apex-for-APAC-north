@@ -16,8 +16,10 @@ function buildSitemap() {
     '/valorant/maps',
     '/valorant/news',
     '/ai-coach',
+    '/ai-coach/sample-analysis',
     '/dashboard/coach',
     '/pricing',
+    '/ai-coach/pricing',
   ]
   const apexPaths = APEX_GUIDE_MAPS.map((item) => `/apex/${item.slug}`)
   const valorantPaths = VALORANT_MAPS.map((item) => `/valorant/maps/${item.slug}`)

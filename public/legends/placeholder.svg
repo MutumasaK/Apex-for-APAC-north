@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Legend placeholder">
+  <rect width="128" height="128" rx="28" fill="#f8f5ef"/>
+  <circle cx="64" cy="46" r="22" fill="#d8b36a"/>
+  <path d="M28 108c5.7-22.7 18.7-34 36-34s30.3 11.3 36 34" fill="#1c2330" opacity=".86"/>
+  <path d="M35 24h58" stroke="#a8843d" stroke-width="6" stroke-linecap="round" opacity=".45"/>
+</svg>

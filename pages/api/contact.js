@@ -10,6 +10,10 @@ function normalizeText(value) {
   return String(value ?? '').trim()
 }
 
+function isEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+}
+
 async function saveToSupabase(record) {
   const url = process.env.SUPABASE_URL
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -65,6 +69,14 @@ export default async function handler(req, res) {
         ok: false,
         error: 'validation_error',
         message: '必須項目を入力してください。',
+      })
+    }
+
+    if (!isEmail(record.contact)) {
+      return res.status(400).json({
+        ok: false,
+        error: 'validation_error',
+        message: 'メールアドレスの形式を確認してください。',
       })
     }
 
