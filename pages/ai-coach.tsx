@@ -47,6 +47,9 @@ export default function AiCoachPage() {
               <Link href="/ai-coach/sample-analysis" className="button button--primary">
                 サンプル分析を見る
               </Link>
+              <Link href="/ai-coach/upload" className="button button--secondary">
+                動画を提出する
+              </Link>
               <Link href="/contact" className="button button--ghost">
                 β版に申し込む
               </Link>
