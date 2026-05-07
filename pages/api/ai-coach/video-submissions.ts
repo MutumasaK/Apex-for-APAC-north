@@ -18,7 +18,7 @@ export const config = {
 const MAX_VIDEO_BYTES = 750 * 1024 * 1024
 const ALLOWED_VIDEO_MIME_PREFIX = 'video/'
 const PUBLIC_UPLOAD_FAILURE_MESSAGE =
-  '動画の保存に失敗しました。ファイルサイズ、通信状況、または一時的な保存エラーの可能性があります。時間をおいて再送信してください。解消しない場合は運営へご連絡ください。'
+  '動画提出の保存に失敗しました。時間をおいて再度お試しください。解消しない場合は運営へご連絡ください。'
 
 type UploadResponse = {
   ok: boolean
@@ -27,6 +27,10 @@ type UploadResponse = {
   message?: string
   error?: string
   userMessage?: string
+  upload?: {
+    path: string
+    token: string
+  }
 }
 
 type ParsedUpload = {
@@ -45,6 +49,8 @@ type TeamRecord = {
   team_name: string
 }
 
+type SubmissionNotificationRecord = Record<string, string>
+
 function getFileExtension(filename: string, mimeType: string) {
   const ext = filename.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '')
 
@@ -52,6 +58,7 @@ function getFileExtension(filename: string, mimeType: string) {
   if (mimeType === 'video/mp4') return 'mp4'
   if (mimeType === 'video/webm') return 'webm'
   if (mimeType === 'video/quicktime') return 'mov'
+  if (mimeType === 'video/x-matroska') return 'mkv'
 
   return 'bin'
 }
@@ -76,6 +83,53 @@ function getInternalDetail(error: unknown) {
   if (error instanceof Error) return error.message
   if (typeof error === 'object' && 'message' in error) return normalizeText((error as { message?: unknown }).message)
   return String(error)
+}
+
+function getHeaderValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value.join(',') : value || ''
+}
+
+function isJsonRequest(req: NextApiRequest) {
+  return getHeaderValue(req.headers['content-type']).toLowerCase().includes('application/json')
+}
+
+function getPublicBaseUrl(req: NextApiRequest) {
+  const configuredUrl = normalizeText(process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL).replace(/\/$/, '')
+  if (configuredUrl) return configuredUrl
+
+  const proto = getHeaderValue(req.headers['x-forwarded-proto']) || 'https'
+  const host = getHeaderValue(req.headers['x-forwarded-host']) || getHeaderValue(req.headers.host)
+
+  return host ? `${proto}://${host}` : ''
+}
+
+function getFeedbackUrl(req: NextApiRequest, submissionId: string) {
+  const path = `/ai-coach/feedback/${submissionId}`
+  const baseUrl = getPublicBaseUrl(req)
+
+  return baseUrl ? `${baseUrl}${path}` : path
+}
+
+function readJsonBody(req: NextApiRequest): Promise<ParsedUpload> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = []
+
+    req.on('data', (chunk: Buffer) => chunks.push(chunk))
+    req.on('error', reject)
+    req.on('end', () => {
+      try {
+        const rawBody = Buffer.concat(chunks).toString('utf8')
+        const json = rawBody ? JSON.parse(rawBody) : {}
+        const fields = Object.fromEntries(
+          Object.entries(json).map(([key, value]) => [key, typeof value === 'string' ? value : String(value ?? '')])
+        )
+
+        resolve({ fields })
+      } catch (error) {
+        reject(error)
+      }
+    })
+  })
 }
 
 function parseMultipartForm(req: NextApiRequest): Promise<ParsedUpload> {
@@ -124,6 +178,10 @@ function parseMultipartForm(req: NextApiRequest): Promise<ParsedUpload> {
 
     req.pipe(busboy as any)
   })
+}
+
+async function parseRequest(req: NextApiRequest) {
+  return isJsonRequest(req) ? readJsonBody(req) : parseMultipartForm(req)
 }
 
 async function findOrCreateTeam(teamName: string, discordId: string): Promise<TeamRecord> {
@@ -188,7 +246,24 @@ async function uploadPrivateVideo(path: string, file: NonNullable<ParsedUpload['
   }
 }
 
-async function notifyDiscord(record: Record<string, string>, feedbackUrl: string) {
+async function createSignedUpload(path: string) {
+  const supabaseAdmin = getSupabaseAdminClient()
+  const { data, error } = await supabaseAdmin.storage
+    .from(AI_COACH_VIDEO_BUCKET)
+    .createSignedUploadUrl(path, { upsert: false })
+
+  if (error || !data?.token) {
+    console.error('signed_upload_url_failed', error)
+    throw new Error('signed_upload_url_failed')
+  }
+
+  return {
+    path: data.path || path,
+    token: data.token,
+  }
+}
+
+async function notifyDiscord(record: SubmissionNotificationRecord, feedbackUrl: string) {
   const webhookUrl = normalizeText(process.env.DISCORD_WEBHOOK_URL)
 
   if (!webhookUrl) {
@@ -228,40 +303,137 @@ async function notifyDiscord(record: Record<string, string>, feedbackUrl: string
   }
 }
 
+function validateCommonFields(fields: Record<string, string>) {
+  const teamName = normalizeText(fields.teamName)
+  const userName = normalizeText(fields.userName)
+  const discordId = normalizeText(fields.discordId)
+  const email = normalizeText(fields.email)
+  const description = normalizeText(fields.description)
+  const consentAccepted = fields.consentAccepted === 'true' || fields.consentAccepted === 'on'
+
+  if (!teamName || !userName || !discordId || !email || !isValidEmail(email) || !description) {
+    return {
+      ok: false as const,
+      response: { ok: false, error: 'validation_error', message: '必須項目を確認してください。' },
+    }
+  }
+
+  if (!consentAccepted) {
+    return {
+      ok: false as const,
+      response: { ok: false, error: 'consent_required', message: '同意チェックが必要です。' },
+    }
+  }
+
+  return { ok: true as const }
+}
+
+function buildBaseRecord(fields: Record<string, string>, team: TeamRecord, submissionId: string) {
+  return {
+    id: submissionId,
+    team_id: team.id,
+    team_name: team.team_name,
+    user_name: normalizeText(fields.userName),
+    discord_id: normalizeText(fields.discordId),
+    email: normalizeText(fields.email),
+    rank_tier: normalizeText(fields.rankTier),
+    map_name: normalizeText(fields.mapName),
+    team_comp: normalizeText(fields.teamComp),
+    scene_type: normalizeText(fields.sceneType),
+    focus_points: normalizeText(fields.focusPoints),
+    description: normalizeText(fields.description),
+    consent_accepted: fields.consentAccepted === 'true' || fields.consentAccepted === 'on',
+    ai_video_notes_status: 'not_started',
+  }
+}
+
+async function finalizeFileUpload(req: NextApiRequest, fields: Record<string, string>, res: NextApiResponse<UploadResponse>) {
+  const submissionId = normalizeText(fields.submissionId)
+
+  if (!submissionId) {
+    return res.status(400).json({ ok: false, error: 'submission_id_required', message: '提出IDが見つかりません。' })
+  }
+
+  const supabaseAdmin = getSupabaseAdminClient()
+  const { data: submission, error: selectError } = await supabaseAdmin
+    .from(AI_COACH_SUBMISSIONS_TABLE)
+    .select('id,team_id,team_name,user_name,discord_id,email,rank_tier,map_name,scene_type,focus_points,submission_type,video_path,status')
+    .eq('id', submissionId)
+    .maybeSingle()
+
+  if (selectError || !submission?.id || submission.submission_type !== 'file' || !submission.video_path) {
+    console.error('file_upload_finalize_select_failed', selectError)
+    return res.status(404).json({ ok: false, error: 'submission_not_found', message: '提出情報が見つかりません。' })
+  }
+
+  const { error: updateError } = await supabaseAdmin
+    .from(AI_COACH_SUBMISSIONS_TABLE)
+    .update({ status: 'submitted', updated_at: new Date().toISOString() })
+    .eq('id', submissionId)
+
+  if (updateError) {
+    console.error('file_upload_finalize_update_failed', updateError)
+    throw new Error('file_upload_finalize_update_failed')
+  }
+
+  const feedbackUrl = getFeedbackUrl(req, submissionId)
+
+  try {
+    await notifyDiscord(
+      {
+        id: submissionId,
+        team_id: normalizeText(submission.team_id),
+        team_name: normalizeText(submission.team_name),
+        user_name: normalizeText(submission.user_name),
+        discord_id: normalizeText(submission.discord_id),
+        email: normalizeText(submission.email),
+        rank_tier: normalizeText(submission.rank_tier),
+        map_name: normalizeText(submission.map_name),
+        scene_type: normalizeText(submission.scene_type),
+        focus_points: normalizeText(submission.focus_points),
+        submission_type: 'file',
+        video_url: 'N/A',
+      },
+      feedbackUrl
+    )
+  } catch (discordError) {
+    console.warn('AI Coach video Discord notification failed', discordError)
+  }
+
+  return res.status(200).json({
+    ok: true,
+    submissionId,
+    feedbackUrl,
+    message: '動画提出を受け付けました。',
+  })
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse<UploadResponse>) {
   if (req.method !== 'POST') {
     return res.status(405).json({ ok: false, error: 'method_not_allowed' })
   }
 
   try {
-    const { fields, file } = await parseMultipartForm(req)
-    const teamName = normalizeText(fields.teamName)
-    const userName = normalizeText(fields.userName)
-    const discordId = normalizeText(fields.discordId)
-    const email = normalizeText(fields.email)
-    const rankTier = normalizeText(fields.rankTier)
-    const mapName = normalizeText(fields.mapName)
-    const teamComp = normalizeText(fields.teamComp)
-    const sceneType = normalizeText(fields.sceneType)
-    const focusPoints = normalizeText(fields.focusPoints)
-    const description = normalizeText(fields.description)
+    const { fields, file } = await parseRequest(req)
+    const action = normalizeText(fields.action)
+
+    if (action === 'finalize_file_upload') {
+      return finalizeFileUpload(req, fields, res)
+    }
+
+    const validation = validateCommonFields(fields)
+    if (!validation.ok) {
+      return res.status(400).json(validation.response)
+    }
+
     const videoUrl = normalizeText(fields.videoUrl)
     const submissionType = normalizeText(fields.submissionType || fields.submissionMode)
     const targetTimestamps = normalizeText(fields.targetTimestamps)
-    const consentAccepted = fields.consentAccepted === 'true' || fields.consentAccepted === 'on'
-
-    if (!teamName || !userName || !discordId || !email || !isValidEmail(email) || !description) {
-      return res.status(400).json({ ok: false, error: 'validation_error', message: '必須項目を確認してください。' })
-    }
-
-    if (!consentAccepted) {
-      return res.status(400).json({ ok: false, error: 'consent_required', message: '同意チェックが必要です。' })
-    }
-
+    const directUploadRequested = action === 'create_file_upload'
     const isFileSubmission = submissionType === 'url'
       ? false
-      : Boolean(file && file.fieldName === 'videoFile' && file.buffer.length)
-    const isUrlSubmission = submissionType === 'file' ? false : Boolean(videoUrl && videoUrl.startsWith('http'))
+      : directUploadRequested || Boolean(file && file.fieldName === 'videoFile' && file.buffer.length)
+    const isUrlSubmission = submissionType === 'file' ? false : Boolean(videoUrl && /^https?:\/\//i.test(videoUrl))
 
     if (!isFileSubmission && !isUrlSubmission) {
       return res.status(400).json({
@@ -272,7 +444,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     }
 
     if (isFileSubmission) {
-      if (file!.truncated || file!.buffer.length > MAX_VIDEO_BYTES) {
+      const filename = normalizeText(fields.originalFilename || file?.filename || 'video')
+      const mimeType = normalizeText(fields.mimeType || file?.mimeType || 'application/octet-stream')
+      const fileSize = Number(fields.fileSizeBytes || file?.buffer.length || 0)
+
+      if (file?.truncated || fileSize > MAX_VIDEO_BYTES) {
         return res.status(413).json({
           ok: false,
           error: 'video_too_large',
@@ -280,73 +456,125 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         })
       }
 
-      if (!file!.mimeType.startsWith(ALLOWED_VIDEO_MIME_PREFIX)) {
+      if (!mimeType.startsWith(ALLOWED_VIDEO_MIME_PREFIX)) {
         return res.status(400).json({
           ok: false,
           error: 'invalid_video_type',
           message: '動画ファイルをアップロードしてください。',
         })
       }
-    }
 
-    if (isUrlSubmission) {
-      if (!targetTimestamps) {
-        return res.status(400).json({
-          ok: false,
-          error: 'missing_target_timestamps',
-          userMessage: 'URL提出の場合は、分析してほしい時間帯 / タイムスタンプを入力してください。',
-          message: 'URL提出の場合は、分析してほしい時間帯 / タイムスタンプを入力してください。',
+      const team = await findOrCreateTeam(fields.teamName, fields.discordId)
+      const submissionId = crypto.randomUUID()
+      const ext = getFileExtension(filename, mimeType)
+      const videoPath = `teams/${team.id}/submissions/${submissionId}/original.${ext}`
+      const supabaseAdmin = getSupabaseAdminClient()
+      const record = {
+        ...buildBaseRecord(fields, team, submissionId),
+        video_path: videoPath,
+        original_filename: filename,
+        mime_type: mimeType,
+        file_size_bytes: fileSize || null,
+        video_url: null,
+        submission_type: 'file',
+        source_platform: null,
+        target_timestamps: targetTimestamps || null,
+        status: directUploadRequested ? 'uploading' : 'submitted',
+      }
+
+      if (directUploadRequested) {
+        const upload = await createSignedUpload(videoPath)
+        const { error: submissionInsertError } = await supabaseAdmin.from(AI_COACH_SUBMISSIONS_TABLE).insert(record)
+
+        if (submissionInsertError) {
+          console.error('video_submission_insert_failed', submissionInsertError)
+          throw new Error('video_submission_insert_failed')
+        }
+
+        return res.status(201).json({
+          ok: true,
+          submissionId,
+          feedbackUrl: getFeedbackUrl(req, submissionId),
+          upload,
+          message: 'アップロード先を発行しました。',
         })
       }
-      try {
-        new URL(videoUrl)
-      } catch {
-        return res.status(400).json({ ok: false, error: 'invalid_url', message: '有効なURLを入力してください。' })
-      }
-    }
 
-    const team = await findOrCreateTeam(teamName, discordId)
-    const submissionId = crypto.randomUUID()
-    let videoPath: string | null = null
-    let mimeType: string | null = null
-    let fileSize: number | null = null
-    let originalFilename: string | null = null
-
-    if (isFileSubmission) {
-      const ext = getFileExtension(file!.filename, file!.mimeType)
-      videoPath = `teams/${team.id}/submissions/${submissionId}/original.${ext}`
       await uploadPrivateVideo(videoPath, file!)
-      mimeType = file!.mimeType
-      fileSize = file!.buffer.length
-      originalFilename = file!.filename
+
+      const { data: savedSubmission, error: submissionInsertError } = await supabaseAdmin
+        .from(AI_COACH_SUBMISSIONS_TABLE)
+        .insert(record)
+        .select('id')
+        .single()
+
+      if (submissionInsertError) {
+        console.error('video_submission_insert_failed', submissionInsertError)
+        throw new Error('video_submission_insert_failed')
+      }
+
+      const feedbackUrl = getFeedbackUrl(req, submissionId)
+
+      try {
+        await notifyDiscord(
+          {
+            id: submissionId,
+            team_id: team.id,
+            team_name: team.team_name,
+            user_name: normalizeText(fields.userName),
+            discord_id: normalizeText(fields.discordId),
+            email: normalizeText(fields.email),
+            rank_tier: normalizeText(fields.rankTier),
+            map_name: normalizeText(fields.mapName),
+            scene_type: normalizeText(fields.sceneType),
+            focus_points: normalizeText(fields.focusPoints),
+            submission_type: 'file',
+            video_url: 'N/A',
+          },
+          feedbackUrl
+        )
+      } catch (discordError) {
+        console.warn('AI Coach video Discord notification failed', discordError)
+      }
+
+      return res.status(201).json({
+        ok: true,
+        submissionId: normalizeText(savedSubmission?.id) || submissionId,
+        feedbackUrl,
+        message: '動画提出を受け付けました。',
+      })
     }
 
+    if (!targetTimestamps) {
+      return res.status(400).json({
+        ok: false,
+        error: 'missing_target_timestamps',
+        userMessage: 'URL提出の場合は、分析してほしい時間帯 / タイムスタンプを入力してください。',
+        message: 'URL提出の場合は、分析してほしい時間帯 / タイムスタンプを入力してください。',
+      })
+    }
+
+    try {
+      new URL(videoUrl)
+    } catch {
+      return res.status(400).json({ ok: false, error: 'invalid_url', message: '有効なURLを入力してください。' })
+    }
+
+    const team = await findOrCreateTeam(fields.teamName, fields.discordId)
+    const submissionId = crypto.randomUUID()
     const supabaseAdmin = getSupabaseAdminClient()
     const { data: savedSubmission, error: submissionInsertError } = await supabaseAdmin
       .from(AI_COACH_SUBMISSIONS_TABLE)
       .insert({
-        id: submissionId,
-        team_id: team.id,
-        team_name: team.team_name,
-        user_name: userName,
-        discord_id: discordId,
-        email,
-        rank_tier: rankTier,
-        map_name: mapName,
-        team_comp: teamComp,
-        scene_type: sceneType,
-        focus_points: focusPoints,
-        description,
-        consent_accepted: consentAccepted,
-        video_path: videoPath,
-        original_filename: originalFilename,
-        mime_type: mimeType,
-        file_size_bytes: fileSize,
-        video_url: isUrlSubmission ? videoUrl : null,
-        submission_type: isFileSubmission ? 'file' : 'url',
-        source_platform: isUrlSubmission ? getSourcePlatform(videoUrl) : null,
-        target_timestamps: targetTimestamps || null,
-        ai_video_notes_status: 'not_started',
+        ...buildBaseRecord(fields, team, submissionId),
+        video_path: null,
+        original_filename: null,
+        mime_type: null,
+        file_size_bytes: null,
+        video_url: videoUrl,
+        submission_type: 'url',
+        source_platform: getSourcePlatform(videoUrl),
+        target_timestamps: targetTimestamps,
         status: 'submitted',
       })
       .select('id')
@@ -357,7 +585,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       throw new Error('video_submission_insert_failed')
     }
 
-    const feedbackUrl = `/ai-coach/feedback/${submissionId}`
+    const feedbackUrl = getFeedbackUrl(req, submissionId)
 
     try {
       await notifyDiscord(
@@ -365,15 +593,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           id: submissionId,
           team_id: team.id,
           team_name: team.team_name,
-          user_name: userName,
-          discord_id: discordId,
-          email,
-          rank_tier: rankTier,
-          map_name: mapName,
-          scene_type: sceneType,
-          focus_points: focusPoints,
-          submission_type: isFileSubmission ? 'file' : 'url',
-          video_url: isUrlSubmission ? videoUrl : 'N/A',
+          user_name: normalizeText(fields.userName),
+          discord_id: normalizeText(fields.discordId),
+          email: normalizeText(fields.email),
+          rank_tier: normalizeText(fields.rankTier),
+          map_name: normalizeText(fields.mapName),
+          scene_type: normalizeText(fields.sceneType),
+          focus_points: normalizeText(fields.focusPoints),
+          submission_type: 'url',
+          video_url: videoUrl,
         },
         feedbackUrl
       )

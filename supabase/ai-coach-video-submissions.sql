@@ -219,24 +219,24 @@ grant select, insert, update, delete on public.ai_coach_feedback_reports to serv
 drop policy if exists "service role manages ai coach teams" on public.ai_coach_teams;
 create policy "service role manages ai coach teams"
   on public.ai_coach_teams
-  to service_role
   for all
+  to service_role
   using (true)
   with check (true);
 
 drop policy if exists "service role manages ai coach submissions" on public.ai_coach_video_submissions;
 create policy "service role manages ai coach submissions"
   on public.ai_coach_video_submissions
-  to service_role
   for all
+  to service_role
   using (true)
   with check (true);
 
 drop policy if exists "service role manages ai coach feedback reports" on public.ai_coach_feedback_reports;
 create policy "service role manages ai coach feedback reports"
   on public.ai_coach_feedback_reports
-  to service_role
   for all
+  to service_role
   using (true)
   with check (true);
 
@@ -248,6 +248,7 @@ drop policy if exists "service role manages ai coach videos" on storage.objects;
 create policy "service role manages ai coach videos"
   on storage.objects
   for all
+  to service_role
   using (bucket_id = 'ai-coach-videos')
   with check (bucket_id = 'ai-coach-videos');
 
