@@ -1,5 +1,6 @@
 import { FormEvent, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { createClient } from '@supabase/supabase-js'
 import SeoHead from '../../components/SeoHead'
 import SiteLayout from '../../components/SiteLayout'
 
@@ -10,8 +11,69 @@ type SubmitState = {
   feedbackUrl?: string
 }
 
+type ApiResponse = {
+  ok?: boolean
+  message?: string
+  submissionId?: string
+  feedbackUrl?: string
+  upload?: {
+    path: string
+    token: string
+  }
+}
+
 const rankOptions = ['Rookie-Bronze', 'Silver-Gold', 'Platinum', 'Diamond', 'Master', 'Predator', 'Mixed']
 const sceneOptions = ['Fight review', 'Macro rotation', 'IGL call', 'End game', 'Scrim review', 'Ranked review']
+const videoBucket = 'ai-coach-videos'
+
+function getFormText(formData: FormData, key: string) {
+  return String(formData.get(key) || '').trim()
+}
+
+function buildSubmissionPayload(formData: FormData, submissionType: 'file' | 'url') {
+  return {
+    submissionType,
+    teamName: getFormText(formData, 'teamName'),
+    userName: getFormText(formData, 'userName'),
+    discordId: getFormText(formData, 'discordId'),
+    email: getFormText(formData, 'email'),
+    rankTier: getFormText(formData, 'rankTier'),
+    mapName: getFormText(formData, 'mapName'),
+    teamComp: getFormText(formData, 'teamComp'),
+    sceneType: getFormText(formData, 'sceneType'),
+    focusPoints: getFormText(formData, 'focusPoints'),
+    description: getFormText(formData, 'description'),
+    videoUrl: getFormText(formData, 'videoUrl'),
+    targetTimestamps: getFormText(formData, 'targetTimestamps'),
+    consentAccepted: formData.get('consentAccepted') === 'on' ? 'true' : 'false',
+  }
+}
+
+async function postSubmissionPayload(payload: Record<string, string>) {
+  const response = await fetch('/api/ai-coach/video-submissions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  const json = (await response.json().catch(() => ({}))) as ApiResponse
+
+  if (!response.ok || !json.ok) {
+    throw new Error(json.message || '送信に失敗しました。')
+  }
+
+  return json
+}
+
+function getBrowserSupabaseClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+
+  if (!supabaseUrl || !anonKey) {
+    throw new Error('アップロード設定が不足しています。運営へご連絡ください。')
+  }
+
+  return createClient(supabaseUrl, anonKey)
+}
 
 export default function AiCoachUploadPage() {
   const [submitState, setSubmitState] = useState<SubmitState>({ status: 'idle', message: '' })
@@ -23,56 +85,97 @@ export default function AiCoachUploadPage() {
     event.preventDefault()
     const form = event.currentTarget
     const formData = new FormData(form)
+    const payload = buildSubmissionPayload(formData, submissionMode)
 
-    // 提出方法に応じた検証
     if (submissionMode === 'url') {
-      const videoUrl = formData.get('videoUrl') as string
-      const targetTimestamps = String(formData.get('targetTimestamps') || '').trim()
-      if (!videoUrl) {
+      if (!payload.videoUrl) {
         setSubmitState({ status: 'error', message: 'URLを入力してください。' })
         return
       }
-      // URLの基本的な検証
-      if (!targetTimestamps) {
+      if (!payload.targetTimestamps) {
         setSubmitState({
           status: 'error',
           message: 'URL提出の場合は、分析してほしい時間帯 / タイムスタンプを入力してください。',
         })
         return
       }
-      formData.set('targetTimestamps', targetTimestamps)
       try {
-        new URL(videoUrl)
+        new URL(payload.videoUrl)
       } catch {
         setSubmitState({ status: 'error', message: '有効なURLを入力してください。' })
         return
       }
     } else {
-      // ファイルアップロードの場合は必須チェック
       const videoFile = formData.get('videoFile') as File
       if (!videoFile || videoFile.size === 0) {
         setSubmitState({ status: 'error', message: '動画ファイルを選択してください。' })
         return
       }
+      if (!videoFile.type.startsWith('video/')) {
+        setSubmitState({ status: 'error', message: '動画ファイルをアップロードしてください。' })
+        return
+      }
     }
 
-    setSubmitState({ status: 'submitting', message: '動画を安全に保存しています。完了まで画面を閉じずにお待ちください。' })
+    setSubmitState({
+      status: 'submitting',
+      message: submissionMode === 'file'
+        ? 'アップロード先を準備しています。完了まで画面を閉じずにお待ちください。'
+        : '動画URLを保存しています。',
+    })
 
     try {
-      const response = await fetch('/api/ai-coach/video-submissions', {
-        method: 'POST',
-        body: formData,
-      })
-      const json = await response.json().catch(() => ({}))
+      if (submissionMode === 'file') {
+        const videoFile = formData.get('videoFile') as File
+        const createUploadJson = await postSubmissionPayload({
+          ...payload,
+          action: 'create_file_upload',
+          originalFilename: videoFile.name,
+          mimeType: videoFile.type,
+          fileSizeBytes: String(videoFile.size),
+        })
 
-      if (!response.ok || !json.ok) {
-        throw new Error(json.message || '送信に失敗しました。')
+        if (!createUploadJson.submissionId || !createUploadJson.upload?.path || !createUploadJson.upload.token) {
+          throw new Error('アップロード先の発行に失敗しました。')
+        }
+
+        setSubmitState({
+          status: 'submitting',
+          message: '動画をアップロードしています。ファイルサイズによって時間がかかります。',
+        })
+
+        const supabase = getBrowserSupabaseClient()
+        const { error: uploadError } = await supabase.storage
+          .from(videoBucket)
+          .uploadToSignedUrl(createUploadJson.upload.path, createUploadJson.upload.token, videoFile, {
+            contentType: videoFile.type || 'application/octet-stream',
+          })
+
+        if (uploadError) {
+          throw new Error(uploadError.message || '動画ファイルのアップロードに失敗しました。')
+        }
+
+        const finalizeJson = await postSubmissionPayload({
+          action: 'finalize_file_upload',
+          submissionId: createUploadJson.submissionId,
+        })
+
+        form.reset()
+        setSubmitState({
+          status: 'success',
+          message: finalizeJson.message || '動画提出を受け付けました。運営が確認し、フィードバック準備後に閲覧ページで確認できます。',
+          submissionId: finalizeJson.submissionId,
+          feedbackUrl: finalizeJson.feedbackUrl,
+        })
+        return
       }
+
+      const json = await postSubmissionPayload(payload)
 
       form.reset()
       setSubmitState({
         status: 'success',
-        message: '動画提出を受け付けました。運営が確認し、フィードバック準備後に閲覧ページで確認できます。',
+        message: json.message || '動画提出を受け付けました。運営が確認し、フィードバック準備後に閲覧ページで確認できます。',
         submissionId: json.submissionId,
         feedbackUrl: json.feedbackUrl,
       })
@@ -87,8 +190,8 @@ export default function AiCoachUploadPage() {
   return (
     <>
       <SeoHead
-        title="動画提出 | Apex AI Coach β版"
-        description="Apex AI Coach β版のチーム動画提出フォームです。提出動画は運営確認用として安全に保存され、サイト上には公開されません。"
+        title="動画提出 | Apex AI Coach ベータ"
+        description="Apex AI Coach ベータのチーム動画提出フォームです。提出動画は運営確認用として安全に保存され、サイト上には公開されません。"
         path="/ai-coach/upload"
       />
 
@@ -98,7 +201,7 @@ export default function AiCoachUploadPage() {
             <p className="eyebrow">AI COACH VIDEO SUBMISSION</p>
             <h1>チーム動画を提出する</h1>
             <p className="pageHero__lead">
-              Apex の試合動画を運営確認用として安全に保存し、β版では運営または AI Coach が手動/半自動でフィードバックを返します。
+              Apex の試合動画を運営確認用として安全に保存し、ベータ版では運営または AI Coach が手動・半自動でフィードバックを返します。
               動画や GPT URL はサイト上に公開しません。
             </p>
           </section>
@@ -215,7 +318,7 @@ export default function AiCoachUploadPage() {
                         className="textInput"
                         name="targetTimestamps"
                         required
-                        placeholder="例：12:30〜13:05、1:02:10〜1:03:20"
+                        placeholder="例: 12:30-13:05, 1:02:10-1:03:20"
                       />
                       <span className="fieldHint">長尺動画の場合、分析してほしい場面の時間を入力してください。</span>
                     </label>
@@ -272,9 +375,9 @@ export default function AiCoachUploadPage() {
                       </span>
                     </label>
                     <ul className="detailList">
-                      <li>提出動画はサイト上に公開されません。</li>
+                      <li>提出動画はサイト上には公開されません。</li>
                       <li>削除希望がある場合は運営に連絡できます。</li>
-                      <li>β版では品質改善のため、分析傾向を参考にする可能性があります。</li>
+                      <li>ベータ版では品質改善のため、分析材料を参照する可能性があります。</li>
                     </ul>
                   </div>
 
@@ -285,7 +388,7 @@ export default function AiCoachUploadPage() {
                   ) : null}
 
                   <button type="submit" className="button button--primary" disabled={isSubmitting}>
-                    {isSubmitting ? 'アップロード中...' : '動画を提出する'}
+                    {isSubmitting ? '送信中...' : '動画を提出する'}
                   </button>
                 </form>
               )}
