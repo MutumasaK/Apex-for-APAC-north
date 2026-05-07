@@ -20,12 +20,25 @@ const ALLOWED_VIDEO_MIME_PREFIX = 'video/'
 const PUBLIC_UPLOAD_FAILURE_MESSAGE =
   '動画提出の保存に失敗しました。時間をおいて再度お試しください。解消しない場合は運営へご連絡ください。'
 
+const SAFE_ERROR_CODES = new Set([
+  'supabase_not_configured',
+  'supabase_service_role_key_invalid',
+  'team_select_failed',
+  'team_insert_failed',
+  'signed_upload_url_failed',
+  'video_storage_upload_failed',
+  'video_submission_insert_failed',
+  'file_upload_finalize_select_failed',
+  'file_upload_finalize_update_failed',
+])
+
 type UploadResponse = {
   ok: boolean
   submissionId?: string
   feedbackUrl?: string
   message?: string
   error?: string
+  debugCode?: string
   userMessage?: string
   upload?: {
     path: string
@@ -363,7 +376,7 @@ async function finalizeFileUpload(req: NextApiRequest, fields: Record<string, st
 
   if (selectError || !submission?.id || submission.submission_type !== 'file' || !submission.video_path) {
     console.error('file_upload_finalize_select_failed', selectError)
-    return res.status(404).json({ ok: false, error: 'submission_not_found', message: '提出情報が見つかりません。' })
+    throw new Error('file_upload_finalize_select_failed')
   }
 
   const { error: updateError } = await supabaseAdmin
@@ -406,6 +419,15 @@ async function finalizeFileUpload(req: NextApiRequest, fields: Record<string, st
     feedbackUrl,
     message: '動画提出を受け付けました。',
   })
+}
+
+function internalErrorResponse(detail: string): UploadResponse {
+  return {
+    ok: false,
+    error: 'internal_error',
+    debugCode: SAFE_ERROR_CODES.has(detail) ? detail : 'unexpected_internal_error',
+    message: PUBLIC_UPLOAD_FAILURE_MESSAGE,
+  }
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<UploadResponse>) {
@@ -619,10 +641,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     const internalDetail = getInternalDetail(error)
     console.error('ai-coach video submissions api error', internalDetail, error)
 
-    return res.status(500).json({
-      ok: false,
-      error: 'internal_error',
-      message: PUBLIC_UPLOAD_FAILURE_MESSAGE,
-    })
+    return res.status(500).json(internalErrorResponse(internalDetail))
   }
 }
