@@ -39,6 +39,7 @@ type UploadResponse = {
   message?: string
   error?: string
   debugCode?: string
+  debugDetail?: string
   userMessage?: string
   upload?: {
     path: string
@@ -96,6 +97,14 @@ function getInternalDetail(error: unknown) {
   if (error instanceof Error) return error.message
   if (typeof error === 'object' && 'message' in error) return normalizeText((error as { message?: unknown }).message)
   return String(error)
+}
+
+function getSafeDebugDetail(detail: string) {
+  return detail
+    .replace(/https:\/\/[a-z0-9.-]+\.supabase\.co/gi, 'https://<supabase-project>.supabase.co')
+    .replace(/Bearer\s+[A-Za-z0-9._-]+/g, 'Bearer <redacted>')
+    .replace(/apikey['":\s]+[A-Za-z0-9._-]+/gi, 'apikey <redacted>')
+    .slice(0, 500)
 }
 
 function getHeaderValue(value: string | string[] | undefined) {
@@ -426,6 +435,7 @@ function internalErrorResponse(detail: string): UploadResponse {
     ok: false,
     error: 'internal_error',
     debugCode: SAFE_ERROR_CODES.has(detail) ? detail : 'unexpected_internal_error',
+    debugDetail: getSafeDebugDetail(detail),
     message: PUBLIC_UPLOAD_FAILURE_MESSAGE,
   }
 }
