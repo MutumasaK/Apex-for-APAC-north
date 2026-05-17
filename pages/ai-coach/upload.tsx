@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from 'react'
+import { FormEvent, useState } from 'react'
 import Link from 'next/link'
 import SeoHead from '../../components/SeoHead'
 import SiteLayout from '../../components/SiteLayout'
@@ -26,7 +26,7 @@ function getFormText(formData: FormData, key: string) {
   return String(formData.get(key) || '').trim()
 }
 
-function validateForm(formData: FormData, submissionMode: 'file' | 'url') {
+function validateForm(formData: FormData) {
   const requiredFields = [
     ['teamName', 'チーム名を入力してください。'],
     ['submitterName', '提出者名を入力してください。'],
@@ -38,6 +38,7 @@ function validateForm(formData: FormData, submissionMode: 'file' | 'url') {
     ['focusPoints', '重点的に見てほしいポイントを入力してください。'],
     ['description', '補足説明を入力してください。'],
     ['timestamps', '分析対象のタイムスタンプを入力してください。'],
+    ['videoUrl', '動画URLを入力してください。'],
   ] as const
 
   for (const [key, message] of requiredFields) {
@@ -47,42 +48,42 @@ function validateForm(formData: FormData, submissionMode: 'file' | 'url') {
   const email = getFormText(formData, 'email')
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return '連絡用メールアドレスを正しい形式で入力してください。'
 
-  if (submissionMode === 'url') {
-    const videoUrl = getFormText(formData, 'videoUrl')
-    if (!videoUrl) return '動画URLを入力してください。'
-    try {
-      new URL(videoUrl)
-    } catch {
-      return '動画URLを正しい形式で入力してください。'
-    }
-  } else {
-    const videoFile = formData.get('videoFile') as File | null
-    if (!videoFile || videoFile.size === 0) return '動画ファイルを選択してください。'
-    if (!videoFile.type.startsWith('video/')) return '動画ファイルを選択してください。'
+  try {
+    new URL(getFormText(formData, 'videoUrl'))
+  } catch {
+    return '動画URLを正しい形式で入力してください。'
   }
 
   return ''
 }
 
+function buildPayload(formData: FormData) {
+  return {
+    teamName: getFormText(formData, 'teamName'),
+    submitterName: getFormText(formData, 'submitterName'),
+    email: getFormText(formData, 'email'),
+    discordId: getFormText(formData, 'discordId'),
+    rankTier: getFormText(formData, 'rankTier'),
+    mapName: getFormText(formData, 'mapName'),
+    teamComp: getFormText(formData, 'teamComp'),
+    sceneType: getFormText(formData, 'sceneType'),
+    focusPoints: getFormText(formData, 'focusPoints'),
+    description: getFormText(formData, 'description'),
+    timestamps: getFormText(formData, 'timestamps'),
+    videoUrl: getFormText(formData, 'videoUrl'),
+    shareWithTeammates: formData.get('shareWithTeammates') === 'on',
+  }
+}
+
 export default function AiCoachUploadPage() {
   const [submitState, setSubmitState] = useState<SubmitState>({ status: 'idle', message: '' })
-  const [submissionMode, setSubmissionMode] = useState<'file' | 'url'>('url')
   const isSubmitting = submitState.status === 'submitting'
-  const acceptedVideoTypes = useMemo(() => 'video/mp4,video/webm,video/quicktime,video/x-matroska', [])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const form = event.currentTarget
     const formData = new FormData(form)
-    formData.set('shareWithTeammates', formData.get('shareWithTeammates') === 'on' ? 'true' : 'false')
-
-    if (submissionMode === 'url') {
-      formData.delete('videoFile')
-    } else {
-      formData.delete('videoUrl')
-    }
-
-    const validationMessage = validateForm(formData, submissionMode)
+    const validationMessage = validateForm(formData)
     if (validationMessage) {
       setSubmitState({ status: 'error', message: validationMessage })
       return
@@ -96,7 +97,8 @@ export default function AiCoachUploadPage() {
     try {
       const response = await fetch('/api/ai-coach/submit', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildPayload(formData)),
       })
       const json = (await response.json().catch(() => ({}))) as ApiResponse
 
@@ -105,7 +107,6 @@ export default function AiCoachUploadPage() {
       }
 
       form.reset()
-      setSubmissionMode('url')
       setSubmitState({
         status: 'success',
         message: json.message || '提出を受け付けました。',
@@ -124,8 +125,8 @@ export default function AiCoachUploadPage() {
   return (
     <>
       <SeoHead
-        title="動画提出 | Apex AI Coach β版"
-        description="Apex AI Coach β版のチーム動画・URL提出フォームです。タイムスタンプを必須にして分析精度を高めます。"
+        title="動画URL提出 | Apex AI Coach β版"
+        description="Apex AI Coach β版のチーム動画URL提出フォームです。タイムスタンプを必須にして分析精度を高めます。"
         path="/ai-coach/upload"
       />
 
@@ -133,10 +134,10 @@ export default function AiCoachUploadPage() {
         <main className="pageMain">
           <section className="pageHero pageHero--light">
             <p className="eyebrow">AI COACH VIDEO SUBMISSION</p>
-            <h1>チーム動画を提出する</h1>
+            <h1>チーム動画URLを提出する</h1>
             <p className="pageHero__lead">
-              URLまたは動画ファイルを提出できます。分析したい場面のタイムスタンプは必須です。
-              入金確認など重要なお知らせはメールに送ります。Discord通知を希望する場合のみDiscord IDを入力してください。
+              本番β版では、まずURL提出を安定運用します。動画ファイル提出はSupabase Storageへの直接アップロード方式へ移行後に再開します。
+              分析したい場面のタイムスタンプは必須です。
             </p>
           </section>
 
@@ -231,46 +232,18 @@ export default function AiCoachUploadPage() {
                   <label className="fieldLabel">
                     分析対象タイムスタンプ
                     <input className="textInput" name="timestamps" required placeholder="例: 12:30-13:05, 1:02:10-1:03:20" />
-                    <span className="fieldHint">URL提出・ファイル提出のどちらでも必須です。</span>
+                    <span className="fieldHint">動画URLの中で分析してほしい場面を指定してください。</span>
                   </label>
 
-                  <div className="aiCoachSubmissionModeSelector">
-                    <p className="fieldLabel">動画の提出方法</p>
-                    <div className="modeToggle">
-                      <label className="modeOption">
-                        <input
-                          type="radio"
-                          name="submissionType"
-                          value="url"
-                          checked={submissionMode === 'url'}
-                          onChange={(event) => setSubmissionMode(event.target.value as 'file' | 'url')}
-                        />
-                        <span>URLで提出</span>
-                      </label>
-                      <label className="modeOption">
-                        <input
-                          type="radio"
-                          name="submissionType"
-                          value="file"
-                          checked={submissionMode === 'file'}
-                          onChange={(event) => setSubmissionMode(event.target.value as 'file' | 'url')}
-                        />
-                        <span>ファイルで提出</span>
-                      </label>
-                    </div>
-                  </div>
+                  <label className="fieldLabel">
+                    動画URL
+                    <input className="textInput" name="videoUrl" type="url" required placeholder="https://youtube.com/... など" />
+                  </label>
 
-                  {submissionMode === 'url' ? (
-                    <label className="fieldLabel">
-                      動画URL
-                      <input className="textInput" name="videoUrl" type="url" required placeholder="https://youtube.com/... など" />
-                    </label>
-                  ) : (
-                    <label className="fieldLabel">
-                      動画ファイル
-                      <input className="textInput fileInput" name="videoFile" type="file" required accept={acceptedVideoTypes} />
-                    </label>
-                  )}
+                  <div className="softPanel">
+                    <strong>ファイル提出について</strong>
+                    <span>Vercelのリクエストサイズ制限を避けるため、ファイル提出は一時停止しています。Storage直接アップロード方式へ移行後に再開します。</span>
+                  </div>
 
                   <div className="aiCoachConsentBox">
                     <label className="checkboxField checkboxField--inline">
@@ -280,7 +253,7 @@ export default function AiCoachUploadPage() {
                     <ul className="detailList">
                       <li>フィードバック本文はメールやDiscord本文には載せず、共有URLのページに表示します。</li>
                       <li>メールアドレスは必須です。入金確認、決済完了、領収書、プラン変更、解約など重要なお知らせはメールに送ります。</li>
-                      <li>動画やURLは分析と運営確認のために保存されます。第三者に公開されるものではありません。</li>
+                      <li>動画URLは分析と運営確認のために保存されます。第三者に公開されるものではありません。</li>
                     </ul>
                   </div>
 
@@ -291,7 +264,7 @@ export default function AiCoachUploadPage() {
                   ) : null}
 
                   <button type="submit" className="button button--primary" disabled={isSubmitting}>
-                    {isSubmitting ? '送信中...' : '動画を提出する'}
+                    {isSubmitting ? '送信中...' : '動画URLを提出する'}
                   </button>
                 </form>
               )}

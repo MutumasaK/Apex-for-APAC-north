@@ -2,6 +2,9 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { assertAdminToken } from '../../../lib/ai-coach-supabase'
 import { processPendingSubmissions, processSubmission } from '../../../lib/ai-coach-auto'
 
+// Legacy endpoint for the pre-v2 AI Coach pipeline.
+// GitHub Actions and new UI should call /api/ai-coach/analyze instead.
+
 type ApiResponse = {
   ok: boolean
   results?: unknown

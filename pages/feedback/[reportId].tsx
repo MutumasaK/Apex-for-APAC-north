@@ -90,6 +90,7 @@ export default function FeedbackReportPage() {
 
   const isPending = payload?.report.report_status !== 'completed'
   const isFailed = payload?.report.report_status === 'failed'
+  const isPlanLimited = payload?.report.report_status === 'plan_limit_reached'
 
   async function copyShareUrl() {
     if (!payload?.shareUrl) return
@@ -142,9 +143,19 @@ export default function FeedbackReportPage() {
                   <div className="cardHeader">
                     <div>
                       <p className="sectionHeader__sub">REPORT</p>
-                      <h2>{isFailed ? '分析結果を確認中です' : isPending ? '分析結果を作成中です' : '分析レポート'}</h2>
+                      <h2>
+                        {isPlanLimited
+                          ? '今月の分析上限に達しました'
+                          : isFailed
+                            ? '分析結果を確認中です'
+                            : isPending
+                              ? '分析結果を作成中です'
+                              : '分析レポート'}
+                      </h2>
                     </div>
-                    <span className="statusPill">{isFailed ? '確認中' : isPending ? '作成中' : '完了'}</span>
+                    <span className="statusPill">
+                      {isPlanLimited ? '上限到達' : isFailed ? '確認中' : isPending ? '作成中' : '完了'}
+                    </span>
                   </div>
 
                   <div className="feedbackMetaGrid">
@@ -156,7 +167,12 @@ export default function FeedbackReportPage() {
                     <div><span>分析対象タイムスタンプ</span><strong>{textValue(payload.submission.timestamps) || '-'}</strong></div>
                   </div>
 
-                  {isFailed ? (
+                  {isPlanLimited ? (
+                    <div className="softPanel">
+                      <strong>今月の分析上限に達しました。</strong>
+                      <span>提出内容は保存済みです。プラン変更または翌月の分析枠更新後に、管理者側で分析を再開できます。</span>
+                    </div>
+                  ) : isFailed ? (
                     <div className="softPanel">
                       <strong>分析結果を確認中です。</strong>
                       <span>提出内容は保存済みです。管理者側で確認後、この共有URLでフィードバックを確認できます。</span>

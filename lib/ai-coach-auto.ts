@@ -1,5 +1,8 @@
 import { getSupabaseAdminClient, AI_COACH_SUBMISSIONS_TABLE, AI_COACH_REPORTS_TABLE, AI_COACH_TEAMS_TABLE, insertSupabaseRecord, patchSupabaseRecord } from './ai-coach-supabase'
 
+// Legacy AI Coach flow for ai_coach_video_submissions / ai_coach_feedback_reports.
+// New submissions and scheduled analysis must use lib/ai-coach-v2.ts and /api/ai-coach/analyze.
+
 export const AI_COACH_PLAN_QUOTAS: Record<string, number> = {
   Free: 0,
   Lite: 3,

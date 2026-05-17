@@ -6,7 +6,7 @@ on:
   workflow_dispatch: {}
 
 jobs:
-  call-auto-process:
+  call-v2-analyze:
     runs-on: ubuntu-latest
     steps:
       - name: Call AI Coach v2 analyze endpoint
@@ -18,6 +18,9 @@ jobs:
             echo "SITE_URL or AI_COACH_ADMIN_TOKEN is not set in secrets"
             exit 1
           fi
-          curl -s -S -X GET "$SITE_URL/api/ai-coach/analyze?limit=10" -H "x-ai-coach-admin-token: $AI_COACH_ADMIN_TOKEN" -o /tmp/ai-coach-auto-process.json || true
+          curl -f -s -S -X GET "$SITE_URL/api/ai-coach/analyze?limit=10" \
+            -H "x-ai-coach-admin-token: $AI_COACH_ADMIN_TOKEN" \
+            -o /tmp/ai-coach-auto-process.json
           echo "Response:"
-          cat /tmp/ai-coach-auto-process.json || true
+          cat /tmp/ai-coach-auto-process.json
+          node -e "const r=require('/tmp/ai-coach-auto-process.json'); if(!r.ok){process.exit(1)}"
