@@ -116,6 +116,7 @@ const MAP_ALIASES = [
 ]
 
 const LEGEND_ORDER = [
+  'Axle',
   'Octane',
   'Mad Maggie',
   'Alter',
@@ -398,11 +399,11 @@ export async function fetchCurrentRankMap(): Promise<RankMapResult> {
 
 export async function fetchApexLegendPickRates() {
   const fallbackItems: ApexLegendRateItem[] = [
-    { rank: 1, name: 'Octane', pickRate: 18.7, pickRateLabel: '18.7%' },
-    { rank: 2, name: 'Mad Maggie', pickRate: 15.8, pickRateLabel: '15.8%' },
-    { rank: 3, name: 'Alter', pickRate: 9.1, pickRateLabel: '9.1%' },
-    { rank: 4, name: 'Valkyrie', pickRate: 8.1, pickRateLabel: '8.1%' },
-    { rank: 5, name: 'Bangalore', pickRate: 7.5, pickRateLabel: '7.5%' },
+    { rank: 1, name: 'Axle', pickRate: 27.4, pickRateLabel: '27.4%' },
+    { rank: 2, name: 'Conduit', pickRate: 17.8, pickRateLabel: '17.8%' },
+    { rank: 3, name: 'Valkyrie', pickRate: 10.1, pickRateLabel: '10.1%' },
+    { rank: 4, name: 'Mad Maggie', pickRate: 9.7, pickRateLabel: '9.7%' },
+    { rank: 5, name: 'Octane', pickRate: 5.9, pickRateLabel: '5.9%' },
   ]
 
   const updatedAtLabel = '次回更新: 毎日 00:00 JST 目安'

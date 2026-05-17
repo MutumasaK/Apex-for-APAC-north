@@ -8,6 +8,7 @@ const PICK_RATE_MP_URL =
   'https://apexlegendsstatus.com/game-stats/legends-pick-rates/Masterpred'
 
 const LEGEND_ORDER = [
+  'Axle',
   'Octane',
   'Mad Maggie',
   'Alter',
@@ -152,17 +153,32 @@ function formatCurrentTime() {
 function buildFallbackPayload() {
   const updatedAt = '現在データ確認中'
   const diamondLegends = [
-    'Mad Maggie',
-    'Alter',
-    'Valkyrie',
-    'Bangalore',
-    'Wraith',
-  ].map((name, index) => ({
+    ['Axle', '27.4%', 27.4],
+    ['Conduit', '17.8%', 17.8],
+    ['Valkyrie', '10.1%', 10.1],
+    ['Mad Maggie', '9.7%', 9.7],
+    ['Octane', '5.9%', 5.9],
+  ].map(([name, pickRateLabel, pickRateValue], index) => ({
     rank: index + 1,
     name,
-    pickRate: '-',
-    pickRateValue: 0,
-    pickRateLabel: '-',
+    pickRate: pickRateLabel,
+    pickRateValue,
+    pickRateLabel,
+    image: getLegendImage(name),
+    icon: getLegendImage(name),
+  }))
+  const masterPredatorLegends = [
+    ['Axle', '33.0%', 33.0],
+    ['Conduit', '16.6%', 16.6],
+    ['Valkyrie', '14.5%', 14.5],
+    ['Mad Maggie', '6.2%', 6.2],
+    ['Octane', '4.6%', 4.6],
+  ].map(([name, pickRateLabel, pickRateValue], index) => ({
+    rank: index + 1,
+    name,
+    pickRate: pickRateLabel,
+    pickRateValue,
+    pickRateLabel,
     image: getLegendImage(name),
     icon: getLegendImage(name),
   }))
@@ -178,7 +194,7 @@ function buildFallbackPayload() {
       message: '現在データ確認中',
     },
     masterPredator: {
-      legends: [],
+      legends: masterPredatorLegends,
       updatedAt,
       sourceLabel: 'Master / Predator',
       message: 'Master / Predator は現在データ確認中',
