@@ -23,7 +23,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     const statusFilter = status ? `&status=eq.${encodeURIComponent(status)}` : ''
     const submissions = await selectSupabaseRecords(
       AI_COACH_SUBMISSIONS_TABLE,
-      `select=id,team_id,team_name,user_name,discord_id,email,rank_tier,map_name,team_comp,scene_type,focus_points,description,status,video_path,video_url,submission_type,source_platform,original_filename,mime_type,file_size_bytes,created_at,updated_at&order=created_at.desc&limit=50${statusFilter}`
+      `select=id,team_id,team_name,plan_name,user_name,discord_id,email,rank_tier,map_name,team_comp,scene_type,focus_points,description,status,video_path,video_url,submission_type,source_platform,original_filename,mime_type,file_size_bytes,created_at,updated_at&order=created_at.desc&limit=50${statusFilter}`
     )
 
     return res.status(200).json({ ok: true, submissions })

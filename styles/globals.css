@@ -2436,6 +2436,13 @@ div.metaLegendIcon {
   resize: vertical;
 }
 
+.fieldHint {
+  color: #8b6f3e;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.7;
+}
+
 .formGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2567,6 +2574,76 @@ div.metaLegendIcon {
   padding: 18px;
   border-radius: 16px;
   background: #f8f5ef;
+}
+
+.feedbackShell {
+  display: grid;
+  gap: 18px;
+}
+
+.feedbackMetaGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.feedbackMetaGrid > div {
+  min-width: 0;
+  padding: 14px;
+  border-radius: 14px;
+  background: #f8f5ef;
+}
+
+.feedbackMetaGrid span {
+  display: block;
+  margin-bottom: 4px;
+  color: #8b6f3e;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.feedbackMetaGrid strong {
+  display: block;
+  overflow-wrap: anywhere;
+  color: #1c2330;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.feedbackChecklist {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 18px;
+  color: #5f6772;
+  line-height: 1.9;
+}
+
+.sharePanel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 18px;
+  border-radius: 16px;
+  background: #fff8ea;
+  border: 1px solid rgba(168, 132, 61, 0.22);
+}
+
+.sharePanel strong {
+  display: block;
+  overflow-wrap: anywhere;
+  color: #1c2330;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.sharePanel span {
+  display: block;
+  margin-top: 6px;
+  color: #2f7d42;
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .feedbackText {
@@ -3273,6 +3350,8 @@ div.metaLegendIcon {
   .teamHeroCard,
   .formGrid,
   .submissionSummary,
+  .feedbackMetaGrid,
+  .sharePanel,
   .adminTokenForm,
   .adminCoachLayout {
     grid-template-columns: 1fr;

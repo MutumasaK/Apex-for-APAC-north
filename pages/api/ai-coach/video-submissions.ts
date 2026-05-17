@@ -61,6 +61,7 @@ type ParsedUpload = {
 type TeamRecord = {
   id: string
   team_name: string
+  plan_name?: string
 }
 
 type SubmissionNotificationRecord = Record<string, string>
@@ -213,7 +214,7 @@ async function findOrCreateTeam(teamName: string, discordId: string): Promise<Te
 
   const { data: existingTeam, error: selectTeamError } = await supabaseAdmin
     .from(AI_COACH_TEAMS_TABLE)
-    .select('id, team_name')
+    .select('id, team_name, plan_name')
     .eq('team_name', normalizedTeamName)
     .maybeSingle()
 
@@ -231,8 +232,9 @@ async function findOrCreateTeam(teamName: string, discordId: string): Promise<Te
     .insert({
       team_name: normalizedTeamName,
       contact_discord_id: contactDiscordId,
+      plan_name: 'Free',
     })
-    .select('id, team_name')
+    .select('id, team_name, plan_name')
     .single()
 
   if (insertTeamError) {
@@ -355,6 +357,7 @@ function buildBaseRecord(fields: Record<string, string>, team: TeamRecord, submi
     id: submissionId,
     team_id: team.id,
     team_name: team.team_name,
+    plan_name: team.plan_name || 'Free',
     user_name: normalizeText(fields.userName),
     discord_id: normalizeText(fields.discordId),
     email: normalizeText(fields.email),

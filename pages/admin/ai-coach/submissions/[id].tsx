@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react'
+import type { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import SeoHead from '../../../../components/SeoHead'
@@ -346,6 +347,41 @@ export default function AdminAiCoachSubmissionDetailPage() {
     }
   }
 
+  async function sendTestEmail() {
+    if (!id || !submission) return
+    const to = String(submission.email || process.env.DEV_TEST_EMAIL || '')
+    if (!to) {
+      setMessage('送信先メールアドレスが保存されていません。')
+      return
+    }
+
+    setLoading(true)
+    setMessage('テストメールを送信中...')
+
+    try {
+      const response = await fetch('/api/admin/send-test-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-ai-coach-admin-token': adminToken,
+        },
+        body: JSON.stringify({ to }),
+      })
+
+      const json = await response.json().catch(() => ({}))
+      if (!response.ok || !json.ok) {
+        throw new Error(json.error || 'send_test_email_failed')
+      }
+
+      setMessage('テストメールを送信しました。Mailtrap の受信を確認してください。')
+    } catch (error) {
+      console.error('test email send failed', error)
+      setMessage('テストメールの送信に失敗しました。')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   function updateFeedback(key: keyof Feedback, value: string) {
     setFeedback((current) => ({ ...current, [key]: value }))
   }
@@ -411,6 +447,7 @@ export default function AdminAiCoachSubmissionDetailPage() {
                     <div><span>提出ID</span><strong>{displayValue(submission.id)}</strong></div>
                     <div><span>提出者</span><strong>{displayValue(submission.user_name)}</strong></div>
                     <div><span>提出方法</span><strong>{displayValue(submission.submission_type)}</strong></div>
+                    <div><span>プラン</span><strong>{displayValue(submission.plan_name)}</strong></div>
                     <div><span>ランク帯</span><strong>{displayValue(submission.rank_tier)}</strong></div>
                     <div><span>マップ</span><strong>{displayValue(submission.map_name)}</strong></div>
                     <div><span>使用構成</span><strong>{displayValue(submission.team_comp)}</strong></div>
@@ -430,6 +467,14 @@ export default function AdminAiCoachSubmissionDetailPage() {
                         <button type="button" className="button button--primary" onClick={openVideoUrl}>
                           動画URLを開く
                         </button>
+                        <button
+                          type="button"
+                          className="button button--secondary"
+                          onClick={() => sendTestEmail()}
+                          disabled={!submission?.email || loading}
+                        >
+                          テストメール送信
+                        </button>
                       </div>
                     </div>
                   ) : (
@@ -442,6 +487,14 @@ export default function AdminAiCoachSubmissionDetailPage() {
                         </button>
                         <button type="button" className="button button--secondary" onClick={generateAiVideoNotesPlaceholder}>
                           AIメモを生成
+                        </button>
+                        <button
+                          type="button"
+                          className="button button--secondary"
+                          onClick={() => sendTestEmail()}
+                          disabled={!submission?.email || loading}
+                        >
+                          テストメール送信
                         </button>
                       </div>
                     </div>
@@ -594,4 +647,24 @@ export default function AdminAiCoachSubmissionDetailPage() {
       </SiteLayout>
     </>
   )
+}
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const cookies = context.req.headers.cookie || ''
+  const token = cookies
+    .split(';')
+    .map((item) => item.trim())
+    .find((item) => item.startsWith('aiCoachAdminToken='))
+    ?.split('=')[1]
+
+  if (!token || token !== process.env.AI_COACH_ADMIN_TOKEN) {
+    return {
+      redirect: {
+        destination: '/admin/ai-coach/login',
+        permanent: false,
+      },
+    }
+  }
+
+  return { props: {} }
 }

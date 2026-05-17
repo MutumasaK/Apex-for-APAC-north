@@ -1,0 +1,23 @@
+name: AI Coach Auto Process
+
+on:
+  schedule:
+    - cron: '0 * * * *' # every hour
+  workflow_dispatch: {}
+
+jobs:
+  call-auto-process:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call AI Coach v2 analyze endpoint
+        env:
+          SITE_URL: ${{ secrets.SITE_URL }}
+          AI_COACH_ADMIN_TOKEN: ${{ secrets.AI_COACH_ADMIN_TOKEN }}
+        run: |
+          if [ -z "$SITE_URL" ] || [ -z "$AI_COACH_ADMIN_TOKEN" ]; then
+            echo "SITE_URL or AI_COACH_ADMIN_TOKEN is not set in secrets"
+            exit 1
+          fi
+          curl -s -S -X GET "$SITE_URL/api/ai-coach/analyze?limit=10" -H "x-ai-coach-admin-token: $AI_COACH_ADMIN_TOKEN" -o /tmp/ai-coach-auto-process.json || true
+          echo "Response:"
+          cat /tmp/ai-coach-auto-process.json || true

@@ -30,7 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
     const submissions = await selectSupabaseRecords(
       AI_COACH_SUBMISSIONS_TABLE,
-      `select=id,team_id,team_name,user_name,discord_id,email,rank_tier,map_name,team_comp,scene_type,focus_points,description,status,video_path,video_url,submission_type,source_platform,target_timestamps,ai_video_notes,ai_video_notes_status,ai_video_notes_generated_at,admin_video_memo,original_filename,mime_type,file_size_bytes,created_at,updated_at&id=eq.${encodeURIComponent(id)}&limit=1`
+      `select=id,team_id,team_name,plan_name,user_name,discord_id,email,rank_tier,map_name,team_comp,scene_type,focus_points,description,status,video_path,video_url,submission_type,source_platform,target_timestamps,ai_video_notes,ai_video_notes_status,ai_video_notes_generated_at,admin_video_memo,original_filename,mime_type,file_size_bytes,created_at,updated_at&id=eq.${encodeURIComponent(id)}&limit=1`
     )
 
     if (!submissions.length) {

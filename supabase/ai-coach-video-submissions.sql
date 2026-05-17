@@ -6,6 +6,7 @@ create extension if not exists "pgcrypto";
 create table if not exists public.ai_coach_teams (
   id uuid primary key default gen_random_uuid(),
   team_name text not null unique,
+  plan_name text not null default 'Free',
   discord_channel_id text,
   contact_discord_id text,
   memo text,
@@ -16,6 +17,7 @@ create table if not exists public.ai_coach_video_submissions (
   id uuid primary key default gen_random_uuid(),
   team_id uuid references public.ai_coach_teams(id) on delete set null,
   team_name text not null,
+  plan_name text,
   user_name text not null,
   discord_id text not null,
   email text not null,
@@ -82,9 +84,10 @@ begin
 end $$;
 
 alter table public.ai_coach_video_submissions
-  add column if not exists team_id uuid references public.ai_coach_teams(id) on delete set null;
+  add column if not exists plan_name text not null default 'Free';
 
 alter table public.ai_coach_video_submissions
+  add column if not exists plan_name text,
   add column if not exists video_path text,
   add column if not exists video_url text,
   add column if not exists submission_type text not null default 'file',
@@ -256,6 +259,7 @@ create policy "service role manages ai coach videos"
 create table if not exists public.ai_coach_teams (
   id uuid primary key default gen_random_uuid(),
   team_name text not null unique,
+  plan_name text not null default 'Free',
   discord_channel_id text,
   contact_discord_id text,
   memo text,
@@ -266,6 +270,7 @@ alter table public.ai_coach_video_submissions
 add column if not exists team_id uuid references public.ai_coach_teams(id) on delete set null;
 
 alter table public.ai_coach_video_submissions
+add column if not exists plan_name text,
 add column if not exists video_path text,
 add column if not exists video_url text,
 add column if not exists submission_type text not null default 'file',
