@@ -197,6 +197,82 @@ function buildUsedSources(submission: Record<string, unknown>, hasLandmarkKnowle
   }
 }
 
+function buildFallbackAnalysis(
+  submission: Record<string, unknown>,
+  teamName: string,
+  teamTrends: string,
+  reason: string
+): AiCoachRawAnalysis {
+  const landmarkCorrection = detectLandmarkCorrection(submission)
+  const mapName = normalizeText(submission.map_name)
+  const sceneType = normalizeText(submission.scene_type)
+  const rankTier = normalizeText(submission.rank_tier)
+  const teamComp = normalizeText(submission.team_comp)
+  const focusPoints = normalizeText(submission.focus_points)
+  const description = normalizeText(submission.description)
+  const timestamps = normalizeText(submission.timestamps)
+  const correctedLandmark = landmarkCorrection.correctedLandmarkName
+
+  return {
+    summary: [
+      '提出情報とタイムスタンプをもとにした自動簡易フィードバックです。',
+      '現時点では動画そのものを直接確認していないため、断定ではなく提出文面から読み取れる範囲で整理しています。',
+      `${teamName}は、${mapName || '指定マップ'}の${sceneType || '指定シーン'}について、${focusPoints || '判断の整理'}を優先して見直すと次回に活かしやすいです。`,
+    ].join('\n'),
+    good_points: [
+      timestamps ? `分析したい時間帯が ${timestamps} と指定されているため、振り返る場面を絞れています。` : '',
+      focusPoints ? `重点ポイントが「${focusPoints}」として明確なので、チーム内で議論する軸を作れています。` : '',
+      teamComp ? `構成情報（${teamComp}）があるため、役割分担とスキル使用の観点で見直しやすいです。` : '',
+    ]
+      .filter(Boolean)
+      .join('\n'),
+    problems: [
+      '動画確認なしの簡易分析のため、実際の射線、人数差、物資状況、リング位置までは確定できません。',
+      description ? `提出説明から見ると、「${description}」の場面で、入るタイミング・見る射線・コールの優先順位を整理する余地があります。` : '',
+      correctedLandmark ? `旧ランドマーク名「${landmarkCorrection.oldLandmarkName}」が含まれているため、現在名「${correctedLandmark}」として扱う必要があります。` : '',
+    ]
+      .filter(Boolean)
+      .join('\n'),
+    improvements: [
+      '次回は、移動開始前に「先に取る位置」「絶対に見られたくない射線」「撃ち合いを始める条件」を短く共有してください。',
+      'ファイト前は、誰が入口を作るか、誰がカバーを見るか、誰が引く判断を出すかを固定すると再現性が上がります。',
+      rankTier ? `${rankTier}帯では、難しいプロ基準の展開よりも、人数差を崩さない移動とフォーカスの統一を優先してください。` : '',
+    ]
+      .filter(Boolean)
+      .join('\n'),
+    igl_call_examples: [
+      '「今は撃ち切らず、先に右の射線だけ消す」',
+      '「3人で同じ入口を見る。割れたら前、割れなければ引く」',
+      '「移動役が先、カバー役は5秒だけ残る。ダウンが出たら即リセット」',
+    ],
+    checklist: [
+      'タイムスタンプの場面で、最初に受けた射線を1つ書き出す',
+      'ファイト開始前に、3人の役割を1文で決める',
+      '移動前に、引く条件と押す条件をチームで合わせる',
+      '次回提出時は、可能ならリング位置・残り部隊数・直前のダメージ交換も補足する',
+    ],
+    team_trends: teamTrends || '過去分析がまだ少ないため、今回の提出内容を初回傾向として蓄積します。',
+    map: mapName,
+    landmark: correctedLandmark || landmarkCorrection.oldLandmarkName || '',
+    scene_type: sceneType,
+    video_reviewed: false,
+    used_sources: buildUsedSources(submission, Boolean(landmarkCorrection.promptText)),
+    fight_decision_type: '簡易判定: ファイト前準備 / 射線整理',
+    macro_decision_type: '簡易判定: 進入タイミング / ポジション選択',
+    main_issue: '動画未確認のため、提出情報上は判断基準とコールの明文化が主な改善点です。',
+    main_recommendation: '次回はタイムスタンプごとに、押す条件・引く条件・見る射線を事前に決めてから同じ場面を再現してください。',
+    confidence: 'low',
+    requires_human_review: true,
+    missing_info: ['動画の直接確認', 'リング位置', '残り部隊数', '直前のダメージ交換', '各メンバーの視点'],
+    discord_summary: 'AI自動分析の代替として、提出情報ベースの簡易フィードバックを作成しました。',
+    old_landmark_corrected: landmarkCorrection.oldLandmarkCorrected,
+    old_landmark_name: landmarkCorrection.oldLandmarkName,
+    corrected_landmark_name: landmarkCorrection.correctedLandmarkName,
+    gpts_reference_url: AI_COACH_GPTS_URL,
+    fallback_reason: reason,
+  } as AiCoachRawAnalysis
+}
+
 async function findOrCreateUser(input: AiCoachSubmissionInput) {
   const supabase = getSupabaseAdminClient()
   const { data: existing, error: selectError } = await supabase
@@ -669,37 +745,94 @@ export async function analyzeSubmission(submissionId: string, fallbackBaseUrl = 
   const planName = normalizePlanName(teamRecord.plan_name || teamRecord.plan)
   const monthlyLimit = getMonthlyLimit(planName)
   const completedCount = await countCompletedReportsThisMonth(normalizeText(submission.team_id))
+  const teamTrends = await getTeamTrends(normalizeText(submission.team_id))
 
   if (monthlyLimit <= 0 || completedCount >= monthlyLimit) {
-    const raw = {
-      reason: 'monthly_plan_limit_reached',
-      plan: planName,
-      monthly_limit: monthlyLimit,
-      completed_count: completedCount,
-      gpts_reference_url: AI_COACH_GPTS_URL,
-    }
+    const parsed = buildFallbackAnalysis(submission, teamName, teamTrends, 'monthly_plan_limit_simple_report')
     await supabase
       .from(AI_COACH_ANALYSIS_REPORTS_TABLE)
       .update({
-        report_status: 'plan_limit_reached',
-        summary: '今月の分析上限に達しています。',
-        raw_ai_response: raw,
+        report_status: 'completed',
+        summary: normalizeText(parsed.summary),
+        good_points: normalizeText(parsed.good_points),
+        problems: normalizeText(parsed.problems),
+        improvements: normalizeText(parsed.improvements),
+        igl_call_examples: normalizeTextList(parsed.igl_call_examples),
+        checklist: normalizeChecklist(parsed.checklist),
+        team_trends: normalizeText(parsed.team_trends),
+        raw_ai_response: {
+          ...parsed,
+          plan: planName,
+          monthly_limit: monthlyLimit,
+          completed_count: completedCount,
+        },
         updated_at: new Date().toISOString(),
       })
       .eq('id', report.id)
     await supabase
       .from(AI_COACH_SUBMISSIONS_TABLE_V2)
-      .update({ status: 'plan_limit_reached', updated_at: new Date().toISOString() })
+      .update({ status: 'completed', updated_at: new Date().toISOString() })
       .eq('id', submissionId)
-    return { processed: false, reason: 'plan_limit_reached', reportId: report.id, feedbackUrl, planName, monthlyLimit, completedCount }
+
+    await notifyFeedbackReady({
+      reportId: report.id,
+      teamId: normalizeText(submission.team_id),
+      teamName,
+      mapName: normalizeText(parsed.map || submission.map_name),
+      sceneType: normalizeText(parsed.scene_type || submission.scene_type),
+      email: normalizeText(submission.email),
+      discordId: normalizeText(submission.discord_id),
+      feedbackUrl,
+      discordSummary: normalizeText(parsed.discord_summary),
+    })
+
+    return {
+      processed: true,
+      fallback: true,
+      reason: 'monthly_plan_limit_simple_report',
+      reportId: report.id,
+      feedbackUrl,
+      planName,
+      monthlyLimit,
+      completedCount,
+    }
   }
 
   if (!process.env.OPENAI_API_KEY) {
+    const parsed = buildFallbackAnalysis(submission, teamName, teamTrends, 'openai_not_configured_simple_report')
+    await supabase
+      .from(AI_COACH_ANALYSIS_REPORTS_TABLE)
+      .update({
+        report_status: 'completed',
+        summary: normalizeText(parsed.summary),
+        good_points: normalizeText(parsed.good_points),
+        problems: normalizeText(parsed.problems),
+        improvements: normalizeText(parsed.improvements),
+        igl_call_examples: normalizeTextList(parsed.igl_call_examples),
+        checklist: normalizeChecklist(parsed.checklist),
+        team_trends: normalizeText(parsed.team_trends),
+        raw_ai_response: parsed,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', report.id)
     await supabase
       .from(AI_COACH_SUBMISSIONS_TABLE_V2)
-      .update({ status: 'queued', updated_at: new Date().toISOString() })
+      .update({ status: 'completed', updated_at: new Date().toISOString() })
       .eq('id', submissionId)
-    return { processed: false, reason: 'openai_not_configured', reportId: report.id, feedbackUrl }
+
+    await notifyFeedbackReady({
+      reportId: report.id,
+      teamId: normalizeText(submission.team_id),
+      teamName,
+      mapName: normalizeText(parsed.map || submission.map_name),
+      sceneType: normalizeText(parsed.scene_type || submission.scene_type),
+      email: normalizeText(submission.email),
+      discordId: normalizeText(submission.discord_id),
+      feedbackUrl,
+      discordSummary: normalizeText(parsed.discord_summary),
+    })
+
+    return { processed: true, fallback: true, reason: 'openai_not_configured_simple_report', reportId: report.id, feedbackUrl }
   }
 
   await supabase
@@ -708,7 +841,6 @@ export async function analyzeSubmission(submissionId: string, fallbackBaseUrl = 
     .eq('id', report.id)
 
   try {
-    const teamTrends = await getTeamTrends(normalizeText(submission.team_id))
     const parsed = await callOpenAiForAnalysis(submission, teamName, teamTrends)
     if (!parsed) throw new Error('openai_not_configured')
 
@@ -747,19 +879,51 @@ export async function analyzeSubmission(submissionId: string, fallbackBaseUrl = 
 
     return { processed: true, reportId: report.id, feedbackUrl }
   } catch (error) {
+    const parsed = buildFallbackAnalysis(
+      submission,
+      teamName,
+      teamTrends,
+      error instanceof Error ? `openai_failed:${error.message}` : 'openai_failed'
+    )
     await supabase
       .from(AI_COACH_ANALYSIS_REPORTS_TABLE)
       .update({
-        report_status: 'failed',
-        raw_ai_response: { error: error instanceof Error ? error.message : String(error), gpts_reference_url: AI_COACH_GPTS_URL },
+        report_status: 'completed',
+        summary: normalizeText(parsed.summary),
+        good_points: normalizeText(parsed.good_points),
+        problems: normalizeText(parsed.problems),
+        improvements: normalizeText(parsed.improvements),
+        igl_call_examples: normalizeTextList(parsed.igl_call_examples),
+        checklist: normalizeChecklist(parsed.checklist),
+        team_trends: normalizeText(parsed.team_trends),
+        raw_ai_response: parsed,
         updated_at: new Date().toISOString(),
       })
       .eq('id', report.id)
     await supabase
       .from(AI_COACH_SUBMISSIONS_TABLE_V2)
-      .update({ status: 'analysis_failed', updated_at: new Date().toISOString() })
+      .update({ status: 'completed', updated_at: new Date().toISOString() })
       .eq('id', submissionId)
-    throw error
+
+    await notifyFeedbackReady({
+      reportId: report.id,
+      teamId: normalizeText(submission.team_id),
+      teamName,
+      mapName: normalizeText(parsed.map || submission.map_name),
+      sceneType: normalizeText(parsed.scene_type || submission.scene_type),
+      email: normalizeText(submission.email),
+      discordId: normalizeText(submission.discord_id),
+      feedbackUrl,
+      discordSummary: normalizeText(parsed.discord_summary),
+    })
+
+    return {
+      processed: true,
+      fallback: true,
+      reason: 'openai_failed_simple_report',
+      reportId: report.id,
+      feedbackUrl,
+    }
   }
 }
 
